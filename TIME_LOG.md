@@ -234,11 +234,18 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-16:06:09→16:07:03  feat(compose): final-phrase cadence to tonic
+16:06:09→16:07:03  PR#93 feat(compose): final-phrase cadence to tonic
   estimate: 1.0 min    actual: 0.90 min    delta: -0.10
   user-observable: last note of last phrase lands on tonic (scale degree 0),
   penultimate on supertonic — songs end with musical finality instead of
   wherever the contour left off
+```
+
+```
+16:07:43→16:08:54  feat(render): stereo echo — alternate taps L/R
+  estimate: 1.5 min    actual: 1.18 min    delta: -0.32
+  user-observable: echo reflections ping-pong between channels; hall becomes
+  a room with walls you can place in the stereo field
 ```
 
 ## rules of thumb (v0.1)
