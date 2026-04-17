@@ -100,6 +100,31 @@ pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Re
     Ok(())
 }
 
+/// Multi-tap delay: for each (delay_ms, gain) tap, add a shifted copy of
+/// `samples` to the output. In-place style: returns a new Vec of length
+/// `samples.len() + max_delay_samples` so the trailing echoes aren't truncated.
+/// This is simple array arithmetic (shift + scale + sum) — the same category
+/// of glue math as stem mixing, not a new DSP tool.
+pub fn multi_tap_delay(samples: &[f32], sr: u32, taps: &[(u32, f32)]) -> Vec<f32> {
+    let max_delay = taps.iter().map(|(ms, _)| *ms).max().unwrap_or(0);
+    let max_delay_samples = (max_delay as f32 * sr as f32 / 1000.0) as usize;
+    let n = samples.len() + max_delay_samples;
+    let mut out = vec![0.0f32; n];
+    for (i, &v) in samples.iter().enumerate() {
+        out[i] += v;
+    }
+    for (ms, g) in taps {
+        let off = (*ms as f32 * sr as f32 / 1000.0) as usize;
+        for (i, &v) in samples.iter().enumerate() {
+            let idx = i + off;
+            if idx < n {
+                out[idx] += g * v;
+            }
+        }
+    }
+    out
+}
+
 /// Equal-power pan gains. `pan` in [-1.0, 1.0]: -1 = full L, 0 = center, 1 = full R.
 pub fn pan_gains(pan: f32) -> (f32, f32) {
     let p = pan.clamp(-1.0, 1.0);
@@ -334,9 +359,7 @@ pub fn mix_stems_to_wav(
     mix_stems_stereo(vocal_wav_16k, &stems_panned, vocal_gain, 0.0, out_wav)
 }
 
-/// Stereo stem mixer. Vocal is upsampled via csdr and panned at `vocal_pan`.
-/// Each `(stem, gain, pan)` is panned with equal-power law. Master bus AGC+limit
-/// is applied independently per channel before WAV write.
+/// Stereo stem mixer without echo. See `mix_stems_stereo_with_echo`.
 pub fn mix_stems_stereo(
     vocal_wav_16k: &Path,
     stems: &[(&[f32], f32, f32)],
@@ -344,7 +367,26 @@ pub fn mix_stems_stereo(
     vocal_pan: f32,
     out_wav: &Path,
 ) -> Result<PathBuf> {
-    let vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
+    mix_stems_stereo_with_echo(vocal_wav_16k, stems, vocal_gain, vocal_pan, &[], out_wav)
+}
+
+/// Stereo stem mixer. Vocal is upsampled via csdr and panned at `vocal_pan`.
+/// Each `(stem, gain, pan)` is panned with equal-power law. Master bus AGC+limit
+/// is applied independently per channel before WAV write. If `echo_taps` is
+/// non-empty, the vocal (only) gets a multi-tap echo applied before panning,
+/// widening the sense of space without affecting the pulse hit transients.
+pub fn mix_stems_stereo_with_echo(
+    vocal_wav_16k: &Path,
+    stems: &[(&[f32], f32, f32)],
+    vocal_gain: f32,
+    vocal_pan: f32,
+    echo_taps: &[(u32, f32)],
+    out_wav: &Path,
+) -> Result<PathBuf> {
+    let mut vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
+    if !echo_taps.is_empty() {
+        vocal_48k = multi_tap_delay(&vocal_48k, MASTER_SR, echo_taps);
+    }
     let mut n = vocal_48k.len();
     for (s, _, _) in stems {
         n = n.max(s.len());

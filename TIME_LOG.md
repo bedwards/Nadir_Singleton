@@ -169,9 +169,17 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:12:30→10:13:15  feat(song) + bump: song audit standalone + v0.2.0 workspace bump
+10:12:30→10:13:15  PR#77 feat(song): song audit standalone + v0.2.0 bump
   estimate: 1.5 min    actual: 0.75 min    delta: -0.75
   user-observable: nadir song audit runs against existing stems (no re-render); workspace now 0.2.0 marking session 1 features
+```
+
+```
+10:14:26→10:16:06  feat(render): multi-tap delay on vocal before mix
+  estimate: 1.5 min    actual: 1.67 min    delta: +0.17 (first over-run — wrapper
+  fn approach needed one extra iteration, grep-edit workflow added overhead)
+  user-observable: songs gain a hall-like sense of space (default taps 187/311/523 ms,
+  ~20% decay); vocal echo extends the render tail ~2.5s
 ```
 
 ## rules of thumb (v0.1)
