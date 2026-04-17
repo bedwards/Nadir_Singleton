@@ -1,0 +1,26 @@
+[track]
+n = 1
+slug = "01_gates_of_the_fair"
+title = "Gates of the Fair"
+key = "G"
+scale = "major"
+bpm = 132
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "opener; the turnstile clicks, a voice calls each arrival, F0 stats unfurl the colour of the day"
+motifs = ["m.feature_vector_waltz", "m.dawn_utterance"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [180, 560]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

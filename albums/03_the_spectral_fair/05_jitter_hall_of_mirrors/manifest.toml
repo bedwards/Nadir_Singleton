@@ -1,0 +1,26 @@
+[track]
+n = 5
+slug = "05_jitter_hall_of_mirrors"
+title = "Jitter Hall of Mirrors"
+key = "B"
+scale = "minor"
+bpm = 144
+meter = [6, 8]
+bars = 24
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "cycle-to-cycle F0 wobble becomes a hall of reflections; mirrors break the voice on purpose"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [210, 600]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

@@ -1,0 +1,26 @@
+[track]
+n = 4
+slug = "04_hnr_tent"
+title = "HNR Tent"
+key = "E"
+scale = "minor"
+bpm = 120
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "inside a quieter tent, harmonics and noise trade places; breath becomes the decor"
+motifs = ["m.feature_vector_waltz", "m.whisper_psola"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [170, 500]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.5
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

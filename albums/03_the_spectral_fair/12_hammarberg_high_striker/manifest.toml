@@ -1,0 +1,26 @@
+[track]
+n = 12
+slug = "12_hammarberg_high_striker"
+title = "Hammarberg High Striker"
+key = "B"
+scale = "major"
+bpm = 134
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a carnival high-striker named for the Hammarberg index; a hammer of brightness ratio"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [200, 600]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -13.8
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

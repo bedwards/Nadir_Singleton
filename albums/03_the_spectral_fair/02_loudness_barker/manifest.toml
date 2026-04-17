@@ -1,0 +1,26 @@
+[track]
+n = 2
+slug = "02_loudness_barker"
+title = "Loudness Barker"
+key = "D"
+scale = "major"
+bpm = 138
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the barker calls the crowd; Zwicker sone becomes the melody"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [200, 580]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -13.5
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

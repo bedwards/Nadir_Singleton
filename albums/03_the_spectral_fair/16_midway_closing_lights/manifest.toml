@@ -1,0 +1,26 @@
+[track]
+n = 16
+slug = "16_midway_closing_lights"
+title = "Midway Closing Lights"
+key = "G"
+scale = "major"
+bpm = 120
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "closer; the lights of every family go out one by one, the waltz tucked away for the night"
+motifs = ["m.feature_vector_waltz", "m.dawn_utterance"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [170, 520]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.5
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

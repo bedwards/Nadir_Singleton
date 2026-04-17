@@ -1,0 +1,26 @@
+[track]
+n = 11
+slug = "11_alpha_ratio_aerialists"
+title = "Alpha Ratio Aerialists"
+key = "E"
+scale = "major"
+bpm = 136
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "aerialists rise and fall between low and high band energy, the alpha ratio as a tightrope"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [200, 580]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

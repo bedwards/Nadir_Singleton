@@ -1,0 +1,26 @@
+[track]
+n = 9
+slug = "09_formant_fortune_teller"
+title = "Formant Fortune Teller"
+key = "C"
+scale = "minor"
+bpm = 126
+meter = [6, 8]
+bars = 24
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "F1, F2, F3 as three cards laid by a velvet-robed fortune teller; formant frequencies read the future"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [180, 520]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.5
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"
