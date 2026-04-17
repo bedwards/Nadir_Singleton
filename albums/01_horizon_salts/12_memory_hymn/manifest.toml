@@ -1,0 +1,27 @@
+[track]
+n = 12
+slug = "12_memory_hymn"
+title = "Memory Hymn"
+key = "A"
+scale = "dorian"
+bpm = 64
+meter = [4, 4]
+bars = 32
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a hymn for what has already been sung; the album remembers itself"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["13_salt_mirror", "14_hold"]
+
+[targets]
+tessitura_hz = [160, 420]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

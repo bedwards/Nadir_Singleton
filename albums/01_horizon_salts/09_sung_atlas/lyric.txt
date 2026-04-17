@@ -1,0 +1,12 @@
+a field
+a fence
+a road
+a well
+a bird
+a hill
+a river
+a door
+a window
+a bed
+the end of the list
+for now

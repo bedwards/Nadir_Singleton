@@ -1,0 +1,27 @@
+[track]
+n = 8
+slug = "08_the_horizon_appears"
+title = "The Horizon Appears"
+key = "C"
+scale = "dorian"
+bpm = 78
+meter = [4, 4]
+bars = 26
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the title image arrives; a far line in the east"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["09_sung_atlas", "13_salt_mirror"]
+
+[targets]
+tessitura_hz = [170, 450]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

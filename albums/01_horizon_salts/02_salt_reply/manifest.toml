@@ -1,0 +1,27 @@
+[track]
+n = 2
+slug = "02_salt_reply"
+title = "Salt Reply"
+key = "A"
+scale = "minor"
+bpm = 70
+meter = [4, 4]
+bars = 28
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a second voice answers the first utterance"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["04_the_name_is_given", "13_salt_mirror"]
+
+[targets]
+tessitura_hz = [140, 360]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

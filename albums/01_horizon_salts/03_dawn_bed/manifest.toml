@@ -1,0 +1,27 @@
+[track]
+n = 3
+slug = "03_dawn_bed"
+title = "Dawn Bed"
+key = "D"
+scale = "dorian"
+bpm = 60
+meter = [4, 4]
+bars = 32
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "textural interlude; the room around the two voices"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["06_first_refusal", "14_hold"]
+
+[targets]
+tessitura_hz = [110, 300]
+pitch_error_ceiling_cents = 2.5
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

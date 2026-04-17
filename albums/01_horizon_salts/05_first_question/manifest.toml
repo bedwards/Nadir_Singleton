@@ -1,0 +1,27 @@
+[track]
+n = 5
+slug = "05_first_question"
+title = "First Question"
+key = "B"
+scale = "minor"
+bpm = 76
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the first question; the singleton tests the shape of asking"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["11_second_question"]
+
+[targets]
+tessitura_hz = [180, 460]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"
