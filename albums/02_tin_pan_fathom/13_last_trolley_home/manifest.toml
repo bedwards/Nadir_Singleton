@@ -1,0 +1,26 @@
+[track]
+n = 13
+slug = "13_last_trolley_home"
+title = "Last Trolley Home"
+key = "Eb"
+scale = "major"
+bpm = 84
+meter = [4, 4]
+bars = 32
+form = "verse/chorus"
+mbrola_voice = "us3"
+
+[narrative]
+role = "late-night return; the trolley rumbles, the town dims its windows"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [170, 470]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

@@ -1,0 +1,26 @@
+[track]
+n = 9
+slug = "09_soda_fountain_sunday"
+title = "Soda Fountain Sunday"
+key = "F"
+scale = "major"
+bpm = 116
+meter = [4, 4]
+bars = 32
+form = "verse/chorus"
+mbrola_voice = "us1"
+
+[narrative]
+role = "mid-album uptempo; a soda fountain on a bright Sunday afternoon"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [210, 560]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

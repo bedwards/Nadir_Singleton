@@ -1,0 +1,26 @@
+[track]
+n = 11
+slug = "11_parasol_on_a_sunday"
+title = "Parasol on a Sunday"
+key = "D"
+scale = "major"
+bpm = 92
+meter = [3, 4]
+bars = 48
+form = "strophic"
+mbrola_voice = "us3"
+
+[narrative]
+role = "walking waltz; two parasols on a Sunday stroll"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [180, 500]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"
