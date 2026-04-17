@@ -1,0 +1,27 @@
+[track]
+n = 3
+slug = "03_lauds"
+title = "Lauds"
+key = "C"
+scale = "dorian"
+bpm = 60
+meter = [4, 4]
+bars = 18
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "dawn praise; /o/ is permitted for the first office with its own drone"
+motifs = ["m.vowel_drone", "m.dawn_utterance"]
+carries = ["chant", "dawn-voicing"]
+reprises = ["m.dawn_utterance"]
+
+[targets]
+tessitura_hz = [180, 300]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

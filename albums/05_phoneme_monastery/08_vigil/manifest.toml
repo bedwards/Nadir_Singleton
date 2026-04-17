@@ -1,0 +1,26 @@
+[track]
+n = 8
+slug = "08_vigil"
+title = "Vigil"
+key = "E"
+scale = "phrygian"
+bpm = 40
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "long watch of /a/ under darkness; the slowest drone of the album"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "watch", "night"]
+
+[targets]
+tessitura_hz = [140, 200]
+pitch_error_ceiling_cents = 2.5
+vox_loudness_lufs = -21.0
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+texture_preset = "fir_cascade"
+sample_source = "praat_psola"

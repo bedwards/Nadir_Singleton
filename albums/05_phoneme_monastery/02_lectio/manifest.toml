@@ -1,0 +1,27 @@
+[track]
+n = 2
+slug = "02_lectio"
+title = "Lectio"
+key = "A"
+scale = "minor"
+bpm = 52
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "spoken reading over the matins drone; sense emerges as syllables"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "recitation"]
+reprises = ["m.dawn_utterance"]
+
+[targets]
+tessitura_hz = [150, 240]
+pitch_error_ceiling_cents = 4.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

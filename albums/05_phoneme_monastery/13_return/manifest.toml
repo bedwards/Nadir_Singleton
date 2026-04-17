@@ -1,0 +1,27 @@
+[track]
+n = 13
+slug = "13_return"
+title = "Return"
+key = "A"
+scale = "minor"
+bpm = 50
+meter = [4, 4]
+bars = 20
+form = "AB"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the brotherhood re-enters the drone after transgression; /a/ recovered, slowly"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "return", "recovery"]
+reprises = ["m.dawn_utterance", "m.letter_cadence"]
+
+[targets]
+tessitura_hz = [140, 240]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

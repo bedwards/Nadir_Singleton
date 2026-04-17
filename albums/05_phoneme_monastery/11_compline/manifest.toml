@@ -1,0 +1,27 @@
+[track]
+n = 11
+slug = "11_compline"
+title = "Compline"
+key = "A"
+scale = "minor"
+bpm = 46
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "night office; the Great Silence begins; drone descends toward stillness"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "night", "silence preparation"]
+reprises = ["m.letter_cadence"]
+
+[targets]
+tessitura_hz = [140, 200]
+pitch_error_ceiling_cents = 2.5
+vox_loudness_lufs = -21.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

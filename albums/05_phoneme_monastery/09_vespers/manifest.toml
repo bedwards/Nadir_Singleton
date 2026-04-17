@@ -1,0 +1,27 @@
+[track]
+n = 9
+slug = "09_vespers"
+title = "Vespers"
+key = "D"
+scale = "dorian"
+bpm = 54
+meter = [3, 4]
+bars = 18
+form = "verse/refrain"
+mbrola_voice = "us1"
+
+[narrative]
+role = "evening office; candle-lit; a subtle quote from earlier album colors the drone"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "evening"]
+reprises = ["m.tin_pan_turnaround"]
+
+[targets]
+tessitura_hz = [160, 280]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

@@ -1,0 +1,27 @@
+[track]
+n = 12
+slug = "12_silence_rule_broken"
+title = "Silence Rule Broken"
+key = "A"
+scale = "minor"
+bpm = 72
+meter = [4, 4]
+bars = 10
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a single consonant escapes during the Great Silence; the drone refuses to cover it"
+motifs = ["m.letter_cadence"]
+carries = ["transgression", "consonant"]
+reprises = ["m.plosive_rhythm"]
+
+[targets]
+tessitura_hz = [140, 220]
+pitch_error_ceiling_cents = 4.0
+vox_loudness_lufs = -22.0
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+texture_preset = "fir_cascade"
+sample_source = "praat_psola"
