@@ -398,6 +398,57 @@ pub fn split_onsets_even_odd(onsets_s: &[f32]) -> (Vec<f32>, Vec<f32>) {
     (even, odd)
 }
 
+/// Beat-grid hit times. `subdivision` = 1 → quarter notes, 2 → 8th, 4 → 16th.
+/// Times start at 0 and continue every `60 / (bpm * subdivision)` s up to
+/// `duration_s`.
+pub fn beat_grid_times(bpm: f32, duration_s: f32, subdivision: u32) -> Vec<f32> {
+    let step = 60.0 / (bpm.max(1.0) * subdivision.max(1) as f32);
+    let mut out = Vec::new();
+    let mut t = 0.0f32;
+    while t < duration_s {
+        out.push(t);
+        t += step;
+    }
+    out
+}
+
+/// Cycle sine bursts through `hz_cycle` on a beat-grid subdivision. Each burst
+/// has a fast-decay envelope and `note_ms` length. Used for bass arpeggios,
+/// chord stabs, etc.
+pub fn arp_track(
+    hz_cycle: &[f32],
+    duration_s: f32,
+    bpm: f32,
+    subdivision: u32,
+    note_ms: u32,
+) -> Vec<f32> {
+    if hz_cycle.is_empty() {
+        return Vec::new();
+    }
+    let sr = MASTER_SR as f32;
+    let n = (duration_s * sr).ceil() as usize;
+    let mut out = vec![0.0f32; n];
+    let plen = ((note_ms as f32 / 1000.0) * sr) as usize;
+    let times = beat_grid_times(bpm, duration_s, subdivision);
+    for (i, &t) in times.iter().enumerate() {
+        let hz = hz_cycle[i % hz_cycle.len()];
+        let dphi = 2.0 * std::f32::consts::PI * hz / sr;
+        let start = (t * sr) as usize;
+        let mut phi = 0.0f32;
+        for j in 0..plen {
+            let idx = start + j;
+            if idx >= n {
+                break;
+            }
+            let u = j as f32 / plen as f32;
+            let env = (1.0 - u).powi(2) * (1.0 - (-10.0 * u).exp());
+            out[idx] += 0.6 * env * phi.sin();
+            phi += dphi;
+        }
+    }
+    out
+}
+
 /// Synthesize a pitched pulse track (sinusoid bursts) at `onsets_s`.
 /// Each pulse is a fast-decaying sine at `hz` with pulse_ms envelope —
 /// a kick-like tonal percussion. Used when `pulse_kind = "tonic"`.
