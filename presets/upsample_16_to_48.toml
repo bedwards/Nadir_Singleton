@@ -1,0 +1,11 @@
+in_sr = 16000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "convert_s16_f"
+args = []
+
+[[stages]]
+cmd = "fir_interpolate_cc"
+args = ["3"]

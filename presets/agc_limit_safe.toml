@@ -1,0 +1,14 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "fastagc_ff"
+args = [
+    "1024",
+    "0.5",
+]
+
+[[stages]]
+cmd = "limit_ff"
+args = ["0.98"]

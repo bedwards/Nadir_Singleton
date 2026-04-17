@@ -1,0 +1,29 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "yes_f"
+args = [
+    "1.0",
+    "1",
+]
+
+[[stages]]
+cmd = "shift_addition_fc"
+args = ["0.0"]
+
+[[stages]]
+cmd = "peaks_fir_cc"
+args = [
+    "1024",
+    "0.00016666666",
+]
+
+[[stages]]
+cmd = "realpart_cf"
+args = []
+
+[[stages]]
+cmd = "gain_ff"
+args = ["0.5"]

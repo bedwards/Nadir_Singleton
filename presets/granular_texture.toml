@@ -1,0 +1,27 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "dsb_fc"
+args = ["0"]
+
+[[stages]]
+cmd = "shift_addition_cc"
+args = ["0.00052083336"]
+
+[[stages]]
+cmd = "bandpass_fir_fft_cc"
+args = [
+    "-0.08",
+    "0.08",
+    "0.005",
+]
+
+[[stages]]
+cmd = "realpart_cf"
+args = []
+
+[[stages]]
+cmd = "gain_ff"
+args = ["1"]

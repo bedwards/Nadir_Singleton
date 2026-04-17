@@ -1,0 +1,11 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "bandpass_fir_fft_cc"
+args = [
+    "0.01",
+    "0.4",
+    "0.005",
+]

@@ -1,0 +1,15 @@
+in_sr = 48000
+out_sr = 96000
+bin = "csdr"
+
+[[stages]]
+cmd = "shift_addition_fc"
+args = ["0.0"]
+
+[[stages]]
+cmd = "fir_interpolate_cc"
+args = ["2"]
+
+[[stages]]
+cmd = "realpart_cf"
+args = []

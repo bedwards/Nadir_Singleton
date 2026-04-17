@@ -1,0 +1,19 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "shift_addition_cc"
+args = ["0.000000020833335"]
+
+[[stages]]
+cmd = "shift_addition_cc"
+args = ["0.00000004166667"]
+
+[[stages]]
+cmd = "shift_addition_cc"
+args = ["0.0000000625"]
+
+[[stages]]
+cmd = "shift_addition_cc"
+args = ["0.00000008333334"]

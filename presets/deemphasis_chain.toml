@@ -1,0 +1,23 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "deemphasis_nfm_ff"
+args = ["48000"]
+
+[[stages]]
+cmd = "shift_addition_fc"
+args = ["0.0"]
+
+[[stages]]
+cmd = "bandpass_fir_fft_cc"
+args = [
+    "-0.45",
+    "0.2",
+    "0.05",
+]
+
+[[stages]]
+cmd = "realpart_cf"
+args = []
