@@ -150,10 +150,16 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:05:09→10:06:37  feat(render): ping-pong panning for pulse onsets
+10:05:09→10:06:37  PR#69 feat(render): ping-pong panning for pulse onsets
   estimate: 1.5 min    actual: 1.47 min    delta: -0.03 (on the money)
   user-observable: percussive onsets alternate L→R→L→R in stereo — stereo width
   without having to hand-pan in a manifest
+```
+
+```
+10:09:35→10:10:34  feat(compose): phrase-ending rubato (last note 1.25×, penultimate 1.10×)
+  estimate: 1.0 min    actual: 0.98 min    delta: -0.02 (on the money — small compose edit + test update)
+  user-observable: phrases end with a natural rallentando instead of a hard cut on the beat grid
 ```
 
 ## rules of thumb (v0.1)
