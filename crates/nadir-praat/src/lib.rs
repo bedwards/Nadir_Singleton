@@ -19,7 +19,9 @@ impl Default for PraatConfig {
 }
 
 pub fn run_script(cfg: &PraatConfig, script: &Path, args: &[String]) -> Result<String> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let out = Command::new(&cfg.bin)
+        .current_dir(&cwd)
         .arg("--no-pref-files")
         .arg("--run")
         .arg(script)
@@ -98,9 +100,14 @@ endfor
     )
 }
 
-/// Write a script to a tempfile and run it.
+/// Write a script to a tempfile in the current dir and run it.
+/// Praat resolves relative paths relative to the script's location, so
+/// placing the script in the project root ensures relative audio paths work.
 pub fn run_inline(cfg: &PraatConfig, script_body: &str, args: &[String]) -> Result<String> {
-    let mut tf = tempfile::NamedTempFile::new()?;
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut tf = tempfile::Builder::new()
+        .suffix(".praat")
+        .tempfile_in(&cwd)?;
     tf.write_all(script_body.as_bytes())?;
     tf.flush()?;
     run_script(cfg, tf.path(), args)
