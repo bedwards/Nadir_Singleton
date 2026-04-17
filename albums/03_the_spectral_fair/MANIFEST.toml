@@ -9,4 +9,4 @@ palette = "carnival eGeMAPS vectors"
 arc = "a fairground of feature vectors: each attraction a functional family."
 
 [corpus]
-motifs = []
+motifs = ["m.feature_vector_waltz", "m.dawn_utterance", "m.whisper_psola"]

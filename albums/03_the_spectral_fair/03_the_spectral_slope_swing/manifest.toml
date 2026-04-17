@@ -1,0 +1,26 @@
+[track]
+n = 3
+slug = "03_the_spectral_slope_swing"
+title = "The Spectral Slope Swing"
+key = "A"
+scale = "major"
+bpm = 126
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the title dance; the tilt of the spectrum is the tilt of the waltz"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [190, 540]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

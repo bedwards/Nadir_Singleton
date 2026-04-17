@@ -1,0 +1,26 @@
+[track]
+n = 6
+slug = "06_shimmer_carousel"
+title = "Shimmer Carousel"
+key = "F"
+scale = "major"
+bpm = 130
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "amplitude cycle-to-cycle deviation becomes the rising and falling horses of the carousel"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [190, 560]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

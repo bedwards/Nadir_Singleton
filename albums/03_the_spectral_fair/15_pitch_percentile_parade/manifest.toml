@@ -1,0 +1,26 @@
+[track]
+n = 15
+slug = "15_pitch_percentile_parade"
+title = "Pitch Percentile Parade"
+key = "D"
+scale = "major"
+bpm = 138
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a parade in which every float is a percentile of F0; 20th, 50th, 80th march in order"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [190, 600]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

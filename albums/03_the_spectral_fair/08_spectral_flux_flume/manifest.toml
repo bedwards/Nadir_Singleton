@@ -1,0 +1,26 @@
+[track]
+n = 8
+slug = "08_spectral_flux_flume"
+title = "Spectral Flux Flume"
+key = "D"
+scale = "minor"
+bpm = 140
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "frame-to-frame spectral change is the rushing water of a log-flume ride; attacks as splashes"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [200, 580]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

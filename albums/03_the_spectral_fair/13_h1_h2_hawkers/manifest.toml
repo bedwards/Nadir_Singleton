@@ -1,0 +1,26 @@
+[track]
+n = 13
+slug = "13_h1_h2_hawkers"
+title = "H1-H2 Hawkers"
+key = "F"
+scale = "dorian"
+bpm = 128
+meter = [6, 8]
+bars = 24
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "hawkers calling out the harmonic difference; breathy vs pressed voice as two competing stalls"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [180, 520]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"

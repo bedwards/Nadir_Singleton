@@ -1,0 +1,26 @@
+[track]
+n = 10
+slug = "10_voicing_probability_ring"
+title = "Voicing Probability Ring"
+key = "A"
+scale = "minor"
+bpm = 132
+meter = [3, 4]
+bars = 24
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a ring-the-bell attraction keyed to voicing probability; a voiced frame wins the prize"
+motifs = ["m.feature_vector_waltz"]
+carries = ["carnival"]
+
+[targets]
+tessitura_hz = [190, 560]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_multi"
+texture_preset = "granular_texture"
+sample_source = "klatt_texture"
