@@ -472,16 +472,18 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 ..Default::default()
             };
 
-            // Synthesize raw vocal
-            let raw_vox = tempfile::NamedTempFile::with_suffix(".wav")
-                .context("create raw vox tmp")?;
-            synth_to_wav(&vox_cfg, &stream, raw_vox.path())?;
+            let stems_dir = track_dir.join("stems");
+            fs_err::create_dir_all(&stems_dir)?;
+            let raw_vox_path = stems_dir.join("raw_vox.wav");
+            let tuned_vox_path = stems_dir.join("tuned_vox.wav");
+            let f0_realized_path = stems_dir.join("f0_realized.csv");
+            let f0_target_path = stems_dir.join("f0_target.csv");
 
-            // Pitch-tune
+            synth_to_wav(&vox_cfg, &stream, &raw_vox_path)?;
+
             let praat_cfg = PraatConfig::default();
-            let f0_csv = tempfile::NamedTempFile::with_suffix(".csv").context("f0 csv")?;
-            run_inline(&praat_cfg, &extract_f0_script(raw_vox.path(), f0_csv.path()), &[])?;
-            let f0_text = fs_err::read_to_string(f0_csv.path())?;
+            run_inline(&praat_cfg, &extract_f0_script(&raw_vox_path, &f0_realized_path), &[])?;
+            let f0_text = fs_err::read_to_string(&f0_realized_path)?;
             let realized: Vec<(f32, f32)> = f0_text.lines().skip(1)
                 .filter_map(|l| {
                     let mut it = l.split(',');
@@ -491,34 +493,32 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 })
                 .collect();
 
-            let dest = if out.to_str() == Some("vox.wav") {
+            let dest = if out.to_str() == Some("out.wav") {
                 track_dir.join("render.wav")
             } else {
                 out.clone()
             };
 
             if realized.is_empty() {
-                // No pitched frames — just copy raw
-                fs_err::copy(raw_vox.path(), &dest)?;
+                fs_err::copy(&raw_vox_path, &tuned_vox_path)?;
+                fs_err::copy(&raw_vox_path, &dest)?;
             } else {
-                // Build target CSV (scale-snapped)
-                let target_csv = tempfile::NamedTempFile::with_suffix(".csv").context("target csv")?;
                 {
                     use std::io::Write;
-                    let mut f = std::fs::File::create(target_csv.path())?;
+                    let mut f = std::fs::File::create(&f0_target_path)?;
                     writeln!(f, "time_s,hz")?;
                     for (t, hz) in &realized {
                         let snapped = sc.snap(*hz);
                         writeln!(f, "{t},{snapped}")?;
                     }
                 }
-                let tuned = tempfile::NamedTempFile::with_suffix(".wav").context("tuned wav")?;
-                let script = psola_retarget_script(raw_vox.path(), target_csv.path(), tuned.path());
+                let script = psola_retarget_script(&raw_vox_path, &f0_target_path, &tuned_vox_path);
                 run_inline(&praat_cfg, &script, &[])?;
-                fs_err::copy(tuned.path(), &dest)?;
+                fs_err::copy(&tuned_vox_path, &dest)?;
             }
 
             println!("{}", dest.display());
+            println!("stems: {}", stems_dir.display());
             Ok(())
         }
         SongSub::Audit { album, track } => {
