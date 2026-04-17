@@ -182,9 +182,7 @@ pub fn bed_tonal_triad(
     out
 }
 
-/// Synthesize a pulse track at `onsets_s` (seconds). Each pulse = noise burst of
-/// `pulse_ms` with a cos^2 attack/release envelope at 48 kHz. Used as a
-/// percussive accompaniment driven by vocal onsets.
+/// Synthesize a noise-burst pulse track at `onsets_s` (seconds).
 pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) -> Vec<f32> {
     let sr = MASTER_SR as f32;
     let n = (duration_s * sr).ceil() as usize;
@@ -205,6 +203,33 @@ pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) 
             let u = i as f32 / plen as f32;
             let env = (std::f32::consts::PI * u).sin().powi(2);
             out[idx] += 0.6 * env * rand01();
+        }
+    }
+    out
+}
+
+/// Synthesize a pitched pulse track (sinusoid bursts) at `onsets_s`.
+/// Each pulse is a fast-decaying sine at `hz` with pulse_ms envelope —
+/// a kick-like tonal percussion. Used when `pulse_kind = "tonic"`.
+pub fn pulse_track_pitched(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, hz: f32) -> Vec<f32> {
+    let sr = MASTER_SR as f32;
+    let n = (duration_s * sr).ceil() as usize;
+    let mut out = vec![0.0f32; n];
+    let plen = ((pulse_ms as f32 / 1000.0) * sr) as usize;
+    let dphi = 2.0 * std::f32::consts::PI * hz / sr;
+    for &t in onsets_s {
+        let start = (t * sr) as usize;
+        let mut phi = 0.0f32;
+        for i in 0..plen {
+            let idx = start + i;
+            if idx >= n {
+                break;
+            }
+            let u = i as f32 / plen as f32;
+            // exp decay envelope — fast attack, faster decay
+            let env = (1.0 - u).powi(3) * (1.0 - (-8.0 * u).exp());
+            out[idx] += 0.7 * env * phi.sin();
+            phi += dphi;
         }
     }
     out
