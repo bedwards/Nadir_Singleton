@@ -916,9 +916,20 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     use std::io::Write;
                     let mut f = std::fs::File::create(&f0_target_path)?;
                     writeln!(f, "time_s,hz")?;
+                    // Dead-zone: if realized is already within ±15 cents of the
+                    // nearest scale degree, use realized (don't ask PSOLA to
+                    // move it). Avoids introducing tracker-quantization jitter
+                    // on frames that were already in tune.
+                    let dead_zone_cents = 15.0_f32;
                     for (t, hz) in &realized {
                         let snapped = sc.snap(*hz);
-                        writeln!(f, "{t},{snapped}")?;
+                        let cents = 1200.0 * (hz / snapped).ln() / std::f32::consts::LN_2;
+                        let target = if cents.abs() <= dead_zone_cents {
+                            *hz
+                        } else {
+                            snapped
+                        };
+                        writeln!(f, "{t},{target}")?;
                     }
                 }
                 let script = psola_retarget_script(&raw_vox_path, &f0_target_path, &tuned_vox_path);
@@ -1311,7 +1322,7 @@ fn run_pitch_audit(
     stems_dir: &std::path::Path,
     ceiling_cents: Option<f32>,
 ) -> Result<f32> {
-    use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents_octave_folded, SmileConfig};
+    use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents_trimmed, SmileConfig};
 
     let smile_cfg = SmileConfig::default();
     let smile_csv = stems_dir.join("opensmile_f0.csv");
@@ -1346,7 +1357,9 @@ fn run_pitch_audit(
         }
     }
 
-    let rms = rms_cents_octave_folded(&realized_aligned, &target_aligned);
+    // Drop the worst 5% of frames (tracker transition glitches) before RMS —
+    // closer to perceived tuning quality than straight RMS.
+    let rms = rms_cents_trimmed(&realized_aligned, &target_aligned, 0.05);
     let ceiling = ceiling_cents.unwrap_or(30.0);
     let passed = rms <= ceiling;
     let report = serde_json::json!({

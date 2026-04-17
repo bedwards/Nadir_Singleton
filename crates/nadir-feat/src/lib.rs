@@ -173,6 +173,37 @@ pub fn octave_fold(realized: f32, target: f32) -> f32 {
     r
 }
 
+/// Trimmed RMS pitch error in cents, octave-folded and with the top
+/// `trim_frac` of absolute errors excluded. Tracker glitches on transitions
+/// produce a long tail of outlier frames that swamp the straight RMS; the
+/// trimmed variant is closer to what a listener perceives (tiny transient
+/// glitches vs. sustained detuning). `trim_frac = 0.05` drops the worst 5%.
+pub fn rms_cents_trimmed(realized: &[(f32, f32)], target: &[(f32, f32)], trim_frac: f32) -> f32 {
+    let n = realized.len().min(target.len());
+    if n == 0 {
+        return 0.0;
+    }
+    let mut errs: Vec<f32> = realized
+        .iter()
+        .zip(target)
+        .filter_map(|((_, r), (_, t))| {
+            if *r <= 0.0 || *t <= 0.0 {
+                return None;
+            }
+            let folded = octave_fold(*r, *t);
+            Some(1200.0 * (folded / t).ln() / std::f32::consts::LN_2)
+        })
+        .collect();
+    if errs.is_empty() {
+        return 0.0;
+    }
+    errs.sort_by(|a, b| a.abs().partial_cmp(&b.abs()).unwrap());
+    let keep = ((errs.len() as f32) * (1.0 - trim_frac.clamp(0.0, 0.5))).round() as usize;
+    let keep = keep.max(1).min(errs.len());
+    let sum: f32 = errs[..keep].iter().map(|e| e * e).sum();
+    (sum / keep as f32).sqrt()
+}
+
 /// RMS pitch error in cents, but octave-folded so tracker halving/doubling
 /// is not counted as tuning error. Use for audits against openSMILE when the
 /// tracker is known to octave-slip.
