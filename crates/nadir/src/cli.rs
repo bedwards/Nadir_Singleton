@@ -441,7 +441,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             bed_preset,
             strict,
         } => {
-            use nadir_compose::{plan_melody, render_vox_pho};
+            use nadir_compose::{plan_melody_phrased, render_vox_pho};
             use nadir_core::{Key, Scale, ScaleKind};
             use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
             use nadir_vox::{synth_to_wav, MbrolaConfig};
@@ -538,9 +538,19 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_ms: default_pulse_ms(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
-            let lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
-                .unwrap_or_default()
+            let raw_lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
+                .unwrap_or_default();
+            let phrases: Vec<Vec<String>> = raw_lyric
                 .lines()
+                .filter_map(|l| {
+                    let words: Vec<String> = l.split_whitespace().map(str::to_string).collect();
+                    if words.is_empty() { None } else { Some(words) }
+                })
+                .collect();
+            let lyric = phrases
+                .iter()
+                .flatten()
+                .cloned()
                 .collect::<Vec<_>>()
                 .join(" ");
 
@@ -569,8 +579,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 .map(|v| v["stress"].as_f64().unwrap_or(1.0) as f32)
                 .collect();
             let syllables: Vec<String> = lyric.split_whitespace().map(str::to_string).collect();
+            let phrase_lens: Vec<usize> = phrases.iter().map(|p| p.len()).collect();
 
-            let notes = plan_melody(&sc, &syllables, m.track.seed, 220.0, m.track.bpm, &stresses);
+            let notes = plan_melody_phrased(
+                &sc, &syllables, &phrase_lens,
+                m.track.seed, 220.0, m.track.bpm, &stresses,
+            );
             let stream = render_vox_pho(&notes, &phonemes);
 
             let vox_cfg = MbrolaConfig {
