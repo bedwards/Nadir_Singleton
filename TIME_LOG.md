@@ -95,6 +95,34 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 
 ---
 
+## 2026-04-17 (session 1 continued)
+
+```
+09:47:35→09:50:30  PR#61 feat(song): multi-voice duet (MBROLA secondary voices)
+  estimate: 4.0 min    actual: 2.9 min    delta: -1.1 (over-estimated; lesson: repeating an existing
+  in-function loop with local tempfile names is faster than it feels)
+  user-observable: stacked voices at different octaves in render.wav (new stems: tuned_vox_us3.wav etc)
+```
+
+```
+09:51:43→09:52:48  PR#62 feat(compose): phrase-boundary breath
+  estimate: 2.0 min    actual: 1.1 min    delta: -0.9 (single-fn edit + 2 call-site swaps is a 1-min task)
+  user-observable: audible pauses between lyric lines instead of fast run-on
+```
+
+```
+09:53:35→09:54:26  PR#63 feat(render): master-bus agc+limit via csdr
+  estimate: 1.5 min    actual: 0.8 min    delta: -0.7
+  user-observable: mixed tracks no longer peak-clip when stems stack; smoother loudness
+```
+
+```
+09:55:09→09:55:55  PR#64 feat(compose): portamento between in-phrase notes
+  estimate: 2.0 min    actual: 0.8 min    delta: -1.2 (turning a constant into a
+  previous-note reference: small mechanical change)
+  user-observable: legato glissando between sung notes instead of stepped pitch
+```
+
 ## rules of thumb (v0.1)
 
 Derived from session 1 only — treat as seed estimates, refine each session.
@@ -110,3 +138,20 @@ Derived from session 1 only — treat as seed estimates, refine each session.
 | quality-of-life bundle (flag + silence noise) | 2 |
 
 Ceilings to watch for: `cargo build --release` for the whole workspace after a lib change is ~10–20 s; `song render` end-to-end is ~3–5 s per track; full album 01 render is ~60–80 s for 14 tracks. Keep these out of per-PR estimates — they're fixed-cost backdrop.
+
+## observed estimation bias (session 1)
+
+Over four PRs where an explicit estimate was made before work started:
+
+```
+python3 -c "deltas=[2.9-4.0, 1.1-2.0, 0.8-1.5, 0.8-2.0]; import statistics; print('mean delta',round(statistics.mean(deltas),2),'stddev',round(statistics.stdev(deltas),2))"
+# mean delta -0.95   stddev 0.25
+```
+
+Systematic over-estimate by ~1 min. Contributing factors:
+
+- Files I already touched in the session → warm cache for file locations, no re-orientation cost
+- compose/cli changes that *look* like they touch many sites usually only touch 1–2 real ones
+- tests already established → new behavior slots into existing test harness
+
+**Calibration for session 2 onwards:** apply a -50% multiplier to any estimate between 1.5–3 min. For estimates ≥4 min, apply -25%. For estimates ≤1 min, accept as-is (floor around build+test overhead).
