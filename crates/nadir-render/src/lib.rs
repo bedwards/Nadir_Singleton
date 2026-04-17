@@ -100,6 +100,21 @@ pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Re
     Ok(())
 }
 
+/// Apply a sinusoidal amplitude envelope (tremolo) at `rate_hz` with `depth`
+/// in [0, 1]: depth=0 → no modulation, depth=0.3 → swings 70%..100% of input.
+/// Starts at phase 0 so the envelope begins near max (no attack click).
+pub fn amp_tremolo(samples: &mut [f32], rate_hz: f32, depth: f32) {
+    let sr = MASTER_SR as f32;
+    let dphi = 2.0 * std::f32::consts::PI * rate_hz / sr;
+    let mut phi = 0.0f32;
+    let d = depth.clamp(0.0, 1.0);
+    for s in samples.iter_mut() {
+        let env = 1.0 - d * 0.5 * (1.0 - phi.cos());
+        *s *= env;
+        phi += dphi;
+    }
+}
+
 /// Multi-tap delay: for each (delay_ms, gain) tap, add a shifted copy of
 /// `samples` to the output. In-place style: returns a new Vec of length
 /// `samples.len() + max_delay_samples` so the trailing echoes aren't truncated.
