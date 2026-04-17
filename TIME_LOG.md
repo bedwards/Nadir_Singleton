@@ -210,11 +210,18 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-15:58:39→16:00:25  feat(compose/render): per-syllable dynamics via post-synth envelope
+15:58:39→16:00:25  PR#90 feat(compose/render): per-syllable dynamics via post-synth envelope
   estimate: 3.5 min    actual: 1.77 min    delta: -1.73
   user-observable: stressed syllables land louder (×1.2), unstressed softer
   (×0.72), with 15 ms crossfades between — gives lines piano/forte shape
   without invoking MBROLA multiple times per phrase
+```
+
+```
+16:01:20→16:02:04  feat(cli): nadir album audit — diagnostic table
+  estimate: 1.0 min    actual: 0.73 min    delta: -0.27
+  user-observable: track-by-track cents/ceiling/passed table across an album;
+  spot outliers (track 05 first_question at 63.2¢) without listening
 ```
 
 ## rules of thumb (v0.1)
