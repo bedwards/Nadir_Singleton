@@ -9,8 +9,8 @@ dependencies = [
     "silero-vad>=5.1",
     "numpy>=1.26",
     "soundfile>=0.12",
-    "torch>=2.2,<2.3",
-    "torchaudio>=2.2,<2.3",
+    "torch>=2.6",
+    "torchaudio>=2.6",
 ]
 
 [project.optional-dependencies]

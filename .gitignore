@@ -12,10 +12,12 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# Tool builds
+# Tool builds and vendored sources (bootstrap.sh fetches these)
 tools/build/
-tools/src/*/build/
 tools/bin/
+tools/src/
+tools/mbrola-voices/
+tools/opensmile/
 
 # Renders / working audio (keep final mixes under albums/)
 albums/**/work/

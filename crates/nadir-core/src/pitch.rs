@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 pub type PitchHz = f32;
@@ -16,6 +18,48 @@ pub enum Key {
     A,
     As,
     B,
+}
+
+impl FromStr for Key {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "C" => Ok(Key::C),
+            "C#" | "Cs" | "Db" => Ok(Key::Cs),
+            "D" => Ok(Key::D),
+            "D#" | "Ds" | "Eb" => Ok(Key::Ds),
+            "E" => Ok(Key::E),
+            "F" => Ok(Key::F),
+            "F#" | "Fs" | "Gb" => Ok(Key::Fs),
+            "G" => Ok(Key::G),
+            "G#" | "Gs" | "Ab" => Ok(Key::Gs),
+            "A" => Ok(Key::A),
+            "A#" | "As" | "Bb" => Ok(Key::As),
+            "B" => Ok(Key::B),
+            _ => Err(format!("unknown key: {s}")),
+        }
+    }
+}
+
+impl FromStr for ScaleKind {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "major" => Ok(ScaleKind::Major),
+            "minor" => Ok(ScaleKind::Minor),
+            "harmonic_minor" | "harmonicminor" => Ok(ScaleKind::HarmonicMinor),
+            "melodic_minor" | "melodicminor" => Ok(ScaleKind::MelodicMinor),
+            "dorian" => Ok(ScaleKind::Dorian),
+            "phrygian" => Ok(ScaleKind::Phrygian),
+            "lydian" => Ok(ScaleKind::Lydian),
+            "mixolydian" => Ok(ScaleKind::Mixolydian),
+            "locrian" => Ok(ScaleKind::Locrian),
+            "chromatic" => Ok(ScaleKind::Chromatic),
+            "pentatonic_major" | "pentatonicmajor" => Ok(ScaleKind::PentatonicMajor),
+            "pentatonic_minor" | "pentatonicminor" => Ok(ScaleKind::PentatonicMinor),
+            _ => Err(format!("unknown scale: {s}")),
+        }
+    }
 }
 
 impl Key {

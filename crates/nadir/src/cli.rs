@@ -439,18 +439,51 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
             Ok(())
         }
         VoxSub::FromLyrics {
-            text: _,
-            voice: _,
-            key: _,
-            scale: _,
+            text,
+            voice,
+            key,
+            scale,
             bpm: _,
-            seed: _,
+            seed,
             out,
         } => {
-            println!(
-                "from-lyrics stub — wire g2p + compose + synth. target {}",
-                out.display()
-            );
+            use nadir_compose::{plan_melody, render_vox_pho};
+            use nadir_core::{Key, Scale, ScaleKind};
+            use std::process::Command;
+            use std::str::FromStr;
+
+            // G2P via Python subprocess
+            let g2p_output = Command::new("uv")
+                .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
+                       "--voice", &voice, "--text", &text])
+                .output()
+                .context("spawn uv for g2p")?;
+            if !g2p_output.status.success() {
+                anyhow::bail!("g2p failed: {}", String::from_utf8_lossy(&g2p_output.stderr));
+            }
+            // JSON: Vec<Vec<String>> — one inner list per word
+            let phonemes_per_word: Vec<Vec<String>> =
+                serde_json::from_slice(&g2p_output.stdout).context("parse g2p json")?;
+
+            let syllables: Vec<String> = text.split_whitespace()
+                .map(str::to_string)
+                .collect();
+
+            let k = Key::from_str(&key)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            let sk = ScaleKind::from_str(&scale)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            let sc = Scale::new(k, sk);
+
+            // center around A4 for now; bpm unused in melody planning (durations fixed)
+            let notes = plan_melody(&sc, &syllables, seed, 220.0);
+            let stream = render_vox_pho(&notes, &phonemes_per_word);
+            let cfg = MbrolaConfig {
+                voice: voice.clone(),
+                ..Default::default()
+            };
+            synth_to_wav(&cfg, &stream, &out)?;
+            println!("{}", out.display());
             Ok(())
         }
         VoxSub::Tune {

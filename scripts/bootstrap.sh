@@ -133,8 +133,9 @@ select_csdr_fork() {
         printf '%s' "$NADIR_CSDR_FORK"
         return
     fi
+    # jketterl uses mremap (Linux-only) in ringbuffer.cpp; fails on all Darwin.
+    # ha7ilm has GCC-specific Makefile flags but bootstrap patches those for Darwin.
     case "$uname_s/$uname_m" in
-        Darwin/arm64)   printf 'jketterl' ;;
         Darwin/*)       printf 'ha7ilm' ;;
         Linux/*)        printf 'ha7ilm' ;;
         *)              printf 'ha7ilm' ;;
@@ -199,11 +200,23 @@ build_csdr_ha7ilm() {
         done
     fi
 
-    # ha7ilm ships a plain Makefile; on Darwin we skip the NEON path via
-    # PARAMS_NEON="". The Makefile exports a single multi-call csdr binary
-    # at the repo root.
+    # ha7ilm ships a plain Makefile that uses GCC-specific flags and Linux
+    # syscalls. On Darwin we bypass the Makefile entirely and compile a static
+    # binary with clang, stripping the offending flags and defining macOS compat
+    # shims for missing Linux constants.
     if [ "$uname_s" = "Darwin" ]; then
-        (cd "$SRC/csdr-ha7ilm" && make PARAMS_NEON="" nofft=1 || make PARAMS_NEON="")
+        FFTW_CFLAGS="$(pkg-config --cflags fftw3f 2>/dev/null || echo '-I/opt/homebrew/include')"
+        FFTW_LIBS="$(pkg-config --libs fftw3f 2>/dev/null || echo '-L/opt/homebrew/lib -lfftw3f')"
+        (cd "$SRC/csdr-ha7ilm" && cc -std=gnu99 -O3 -ffast-math \
+            -DUSE_FFTW -DLIBCSDR_GPL -DUSE_IMA_ADPCM \
+            -D_DARWIN_C_SOURCE \
+            -DF_SETPIPE_SZ=0 \
+            -DCLOCK_MONOTONIC_RAW=CLOCK_MONOTONIC \
+            -Wno-implicit-function-declaration \
+            -Wno-unused-result \
+            -I. $FFTW_CFLAGS \
+            fft_fftw.c libcsdr_wrapper.c csdr.c \
+            -lm $FFTW_LIBS -o csdr)
     else
         (cd "$SRC/csdr-ha7ilm" && make)
     fi
