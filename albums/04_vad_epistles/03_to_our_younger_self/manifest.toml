@@ -1,0 +1,30 @@
+[track]
+n = 3
+slug = "03_to_our_younger_self"
+title = "To Our Younger Self"
+key = "A"
+scale = "minor"
+bpm = 56
+meter = [3, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a letter addressed to the singleton at its first utterance"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [150, 360]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "deemphasis_chain"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 2000

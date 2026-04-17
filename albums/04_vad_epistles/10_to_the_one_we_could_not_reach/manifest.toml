@@ -1,0 +1,30 @@
+[track]
+n = 10
+slug = "10_to_the_one_we_could_not_reach"
+title = "To the One We Could Not Reach"
+key = "F"
+scale = "minor"
+bpm = 58
+meter = [6, 8]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a letter about distance, written without reproach"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [150, 360]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 2600

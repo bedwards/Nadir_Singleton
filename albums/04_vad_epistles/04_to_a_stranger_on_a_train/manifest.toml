@@ -1,0 +1,30 @@
+[track]
+n = 4
+slug = "04_to_a_stranger_on_a_train"
+title = "To a Stranger on a Train"
+key = "E"
+scale = "minor"
+bpm = 80
+meter = [4, 4]
+bars = 22
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a letter we will never deliver; a stranger we sat beside"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [155, 400]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 1200

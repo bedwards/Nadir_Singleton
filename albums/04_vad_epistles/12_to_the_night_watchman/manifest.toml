@@ -1,0 +1,30 @@
+[track]
+n = 12
+slug = "12_to_the_night_watchman"
+title = "To the Night Watchman"
+key = "A"
+scale = "minor"
+bpm = 60
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a goodnight letter to a character from album 02"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [160, 380]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 2000

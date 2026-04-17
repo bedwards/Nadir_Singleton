@@ -1,0 +1,30 @@
+[track]
+n = 13
+slug = "13_to_the_silence_between"
+title = "To the Silence Between"
+key = "E"
+scale = "dorian"
+bpm = 52
+meter = [4, 4]
+bars = 14
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a letter addressed to the silence that has held every other letter"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice", "meta-envelope"]
+
+[targets]
+tessitura_hz = [150, 350]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "deemphasis_chain"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 3000

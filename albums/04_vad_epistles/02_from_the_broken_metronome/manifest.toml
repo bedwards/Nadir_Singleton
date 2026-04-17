@@ -1,0 +1,30 @@
+[track]
+n = 2
+slug = "02_from_the_broken_metronome"
+title = "From the Broken Metronome"
+key = "D"
+scale = "dorian"
+bpm = 72
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a reply letter; the broken metronome writes back to us"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [160, 380]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 1600
