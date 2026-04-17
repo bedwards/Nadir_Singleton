@@ -547,6 +547,14 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 #[serde(default = "default_seed")]
                 seed: u64,
             }
+            #[derive(Deserialize, Default, Clone)]
+            struct SecondaryVoice {
+                voice: String,
+                #[serde(default)]
+                octave: i32,
+                #[serde(default = "default_secondary_gain")]
+                gain: f32,
+            }
             #[derive(Deserialize, Default)]
             struct DspFields {
                 #[serde(default)]
@@ -561,6 +569,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_gain: f32,
                 #[serde(default = "default_pulse_ms")]
                 pulse_ms: u32,
+                #[serde(default)]
+                secondary_voices: Vec<SecondaryVoice>,
             }
             fn default_bpm() -> f32 { 96.0 }
             fn default_voice() -> String { "us1".into() }
@@ -570,6 +580,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse() -> bool { true }
             fn default_pulse_gain() -> f32 { 0.45 }
             fn default_pulse_ms() -> u32 { 25 }
+            fn default_secondary_gain() -> f32 { 0.4 }
             #[derive(Deserialize, Default)]
             struct TargetsFields {
                 #[serde(default)]
@@ -617,6 +628,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulses: default_pulse(),
                 pulse_gain: default_pulse_gain(),
                 pulse_ms: default_pulse_ms(),
+                secondary_voices: Vec::new(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
             let raw_lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
@@ -716,6 +728,73 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 run_inline(&praat_cfg, &script, &[])?;
             }
 
+            // ── secondary voices (duet stack) ──
+            let mut secondary_stems: Vec<(Vec<f32>, f32)> = Vec::new();
+            for sv in &dsp_cfg.secondary_voices {
+                // Re-G2P for this voice (lexicon maps to voice-appropriate phonemes)
+                let sv_g2p = Command::new("uv")
+                    .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
+                           "--stress", "--voice", &sv.voice, "--text", &lyric])
+                    .output().context("g2p spawn (secondary)")?;
+                if !sv_g2p.status.success() {
+                    tracing::warn!(voice=%sv.voice, err=%String::from_utf8_lossy(&sv_g2p.stderr), "secondary voice g2p failed, skipping");
+                    continue;
+                }
+                let sv_words: Vec<serde_json::Value> = serde_json::from_slice(&sv_g2p.stdout)?;
+                let sv_phonemes: Vec<Vec<String>> = sv_words.iter()
+                    .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
+                        .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                    .collect();
+
+                // Re-plan notes at octave-shifted center
+                let shifted_center = 220.0 * 2f32.powi(sv.octave);
+                let sv_notes = plan_melody_phrased(
+                    &sc, &syllables, &phrase_lens,
+                    m.track.seed.wrapping_add(0xB17AA11A),
+                    shifted_center, m.track.bpm, &stresses,
+                );
+                let sv_stream = render_vox_pho(&sv_notes, &sv_phonemes);
+                let sv_cfg = MbrolaConfig {
+                    voice: sv.voice.clone(),
+                    ..Default::default()
+                };
+                let sv_raw = stems_dir.join(format!("raw_vox_{}.wav", sv.voice));
+                let sv_tuned = stems_dir.join(format!("tuned_vox_{}.wav", sv.voice));
+                if let Err(e) = synth_to_wav(&sv_cfg, &sv_stream, &sv_raw) {
+                    tracing::warn!(voice=%sv.voice, err=%e, "secondary synth failed, skipping");
+                    continue;
+                }
+                let sv_f0_csv = stems_dir.join(format!("f0_realized_{}.csv", sv.voice));
+                run_inline(&praat_cfg, &extract_f0_script(&sv_raw, &sv_f0_csv), &[])?;
+                let sv_f0_text = fs_err::read_to_string(&sv_f0_csv)?;
+                let sv_realized: Vec<(f32, f32)> = sv_f0_text.lines().skip(1)
+                    .filter_map(|l| {
+                        let mut it = l.split(',');
+                        let t: f32 = it.next()?.parse().ok()?;
+                        let h: f32 = it.next()?.parse().ok()?;
+                        Some((t, h))
+                    })
+                    .collect();
+                if sv_realized.is_empty() {
+                    fs_err::copy(&sv_raw, &sv_tuned)?;
+                } else {
+                    let sv_target_csv = stems_dir.join(format!("f0_target_{}.csv", sv.voice));
+                    {
+                        use std::io::Write;
+                        let mut f = std::fs::File::create(&sv_target_csv)?;
+                        writeln!(f, "time_s,hz")?;
+                        for (t, hz) in &sv_realized {
+                            let snapped = sc.snap(*hz);
+                            writeln!(f, "{t},{snapped}")?;
+                        }
+                    }
+                    let sv_script = psola_retarget_script(&sv_raw, &sv_target_csv, &sv_tuned);
+                    run_inline(&praat_cfg, &sv_script, &[])?;
+                }
+                let samples = nadir_render::upsample_16_to_48_via_csdr(&sv_tuned)?;
+                secondary_stems.push((samples, sv.gain));
+            }
+
             // ── bed + pulses + mix ──
             let vocal_info = hound::WavReader::open(&tuned_vox_path)?;
             let dur_s = vocal_info.duration() as f32 / vocal_info.spec().sample_rate as f32;
@@ -779,6 +858,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             if let Some(ref p) = pulses {
                 stems.push((p.as_slice(), dsp_cfg.pulse_gain));
+            }
+            for (samples, gain) in &secondary_stems {
+                stems.push((samples.as_slice(), *gain));
             }
             if stems.is_empty() {
                 fs_err::copy(&tuned_vox_path, &dest)?;
