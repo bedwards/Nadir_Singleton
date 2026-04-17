@@ -558,9 +558,19 @@ fn dispatch_dsp(c: DspCmd) -> Result<()> {
         }
         DspSub::Preset { which, out } => {
             let g = match which.as_str() {
-                "upsample" => presets::upsample_16_to_48("csdr"),
-                "band-limit" => presets::band_limit(0.01, 0.4),
-                "ring-mod" => presets::ring_mod(0.001),
+                // Original (pre-split) names — kept working.
+                "upsample" | "upsample_16_to_48" => presets::upsample_16_to_48("csdr"),
+                "band-limit" | "band_limit" => presets::band_limit(0.01, 0.4),
+                "ring-mod" | "ring_mod" => presets::ring_mod(0.001),
+                // New factories, reachable by their rustified name.
+                "granular_texture" => presets::granular_texture(40, 1.0),
+                "shaped_noise_bed" => presets::shaped_noise_bed(-0.2, 0.2, 50e-6),
+                "dirac_impulse_bed" => presets::dirac_impulse_bed(8.0),
+                "ring_mod_multi" => presets::ring_mod_multi(&[0.001, 0.002, 0.003, 0.004]),
+                "fir_cascade" => presets::fir_cascade(&[(0.01, 0.1), (0.1, 0.3), (0.3, 0.4)]),
+                "deemphasis_chain" => presets::deemphasis_chain(),
+                "agc_limit_safe" => presets::agc_limit_safe(),
+                "upsample_48_to_96" => presets::upsample_48_to_96(2),
                 other => anyhow::bail!("unknown preset: {other}"),
             };
             fs_err::write(&out, g.to_toml()?)?;

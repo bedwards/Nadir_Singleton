@@ -1,0 +1,42 @@
+in_sr = 48000
+out_sr = 48000
+bin = "csdr"
+
+[[stages]]
+cmd = "uniform_noise_f"
+args = []
+
+[[stages]]
+cmd = "gain_ff"
+args = ["0.3"]
+
+[[stages]]
+cmd = "dcblock_ff"
+args = []
+
+[[stages]]
+cmd = "shift_addition_fc"
+args = ["0.0"]
+
+[[stages]]
+cmd = "bandpass_fir_fft_cc"
+args = [
+    "-0.2",
+    "0.2",
+    "0.02",
+]
+
+[[stages]]
+cmd = "realpart_cf"
+args = []
+
+[[stages]]
+cmd = "deemphasis_wfm_ff"
+args = [
+    "48000",
+    "0.00005",
+]
+
+[[stages]]
+cmd = "limit_ff"
+args = ["0.9"]
