@@ -594,6 +594,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_pingpong: bool,
                 #[serde(default = "default_pulse_pingpong_width")]
                 pulse_pingpong_width: f32,
+                #[serde(default = "default_echo_on")]
+                echo: bool,
+                #[serde(default = "default_echo_taps")]
+                echo_taps: Vec<(u32, f32)>,
                 #[serde(default)]
                 secondary_voices: Vec<SecondaryVoice>,
             }
@@ -611,6 +615,11 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse_pan() -> f32 { 0.0 }
             fn default_pulse_pingpong() -> bool { true }
             fn default_pulse_pingpong_width() -> f32 { 0.55 }
+            fn default_echo_on() -> bool { true }
+            fn default_echo_taps() -> Vec<(u32, f32)> {
+                // (delay_ms, gain). Quick comb of small mid-time echoes ≈ hall sense.
+                vec![(187, 0.22), (311, 0.14), (523, 0.09)]
+            }
             #[derive(Deserialize, Default)]
             struct TargetsFields {
                 #[serde(default)]
@@ -664,6 +673,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_pan: default_pulse_pan(),
                 pulse_pingpong: default_pulse_pingpong(),
                 pulse_pingpong_width: default_pulse_pingpong_width(),
+                echo: default_echo_on(),
+                echo_taps: default_echo_taps(),
                 secondary_voices: Vec::new(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
@@ -922,14 +933,16 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             for (samples, gain, pan) in &secondary_stems {
                 stems.push((samples.as_slice(), *gain, *pan));
             }
-            if stems.is_empty() && dsp_cfg.vocal_pan == 0.0 {
+            let taps: Vec<(u32, f32)> = if dsp_cfg.echo { dsp_cfg.echo_taps.clone() } else { Vec::new() };
+            if stems.is_empty() && dsp_cfg.vocal_pan == 0.0 && taps.is_empty() {
                 fs_err::copy(&tuned_vox_path, &dest)?;
             } else {
-                nadir_render::mix_stems_stereo(
+                nadir_render::mix_stems_stereo_with_echo(
                     &tuned_vox_path,
                     &stems,
                     dsp_cfg.vocal_gain,
                     dsp_cfg.vocal_pan,
+                    &taps,
                     &dest,
                 )?;
             }
