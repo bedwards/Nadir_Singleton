@@ -1,0 +1,38 @@
+[track]
+n = 5
+slug = "05_the_last_streetlamp"
+title = "The Last Streetlamp"
+key = "G"
+scale = "minor"
+bpm = 52
+meter = [6, 8]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the lamp at the end of the street still holding on against the dawn"
+motifs = ["m.whisper_psola", "m.vowel_drone"]
+carries = ["art-song-whisper"]
+seeds_for = ["12_the_moth_and_the_lamp", "16_the_small_hours"]
+
+[targets]
+tessitura_hz = [145, 330]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -17.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 950
+very_accurate = true
+formant_shift_ratio = 1.00
+target_median_hz = 185
+range_factor = 0.68
+vowel_drone_hold_s = 8.0

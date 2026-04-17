@@ -1,0 +1,38 @@
+[track]
+n = 13
+slug = "13_a_thimble"
+title = "A Thimble"
+key = "G#"
+scale = "phrygian"
+bpm = 54
+meter = [3, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a silver thimble in a drawer; inherited; a small cap for a finger no one knows"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["15_the_folded_map"]
+
+[targets]
+tessitura_hz = [155, 345]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "formant_shift.praat"
+pitch_method = "ac"
+pitch_floor_hz = 70
+pitch_ceiling_hz = 1050
+very_accurate = true
+formant_shift_ratio = 1.12
+target_median_hz = 225
+range_factor = 0.76
+duration_factor = 0.95

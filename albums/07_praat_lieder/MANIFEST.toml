@@ -6,7 +6,7 @@ planned_tracks = 16
 
 [narrative]
 palette = "minimal art-song"
-arc = "sixteen art songs, one voice, minimal bed; PSOLA as the composer."
+arc = "sixteen art songs, one voice, minimal bed; PSOLA as the composer. Each Lied a small world built around one tiny object."
 
 [corpus]
-motifs = []
+motifs = ["m.whisper_psola", "m.vowel_drone", "m.letter_cadence"]

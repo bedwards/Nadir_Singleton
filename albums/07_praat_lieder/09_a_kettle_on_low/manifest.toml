@@ -1,0 +1,38 @@
+[track]
+n = 9
+slug = "09_a_kettle_on_low"
+title = "A Kettle on Low"
+key = "D"
+scale = "minor"
+bpm = 48
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a kettle held at sub-whistle for company; a second vowel-drone reprise"
+motifs = ["m.whisper_psola", "m.vowel_drone"]
+carries = ["art-song-whisper"]
+seeds_for = ["14_an_empty_glass"]
+
+[targets]
+tessitura_hz = [145, 320]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 1000
+very_accurate = true
+formant_shift_ratio = 0.98
+target_median_hz = 185
+range_factor = 0.62
+vowel_drone_hold_s = 12.0
