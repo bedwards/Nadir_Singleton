@@ -591,13 +591,25 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let pulses_path = stems_dir.join("pulses.wav");
 
             let bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
-                if let Some((low, high, tilt)) = nadir_render::resolve_bed_preset(name) {
-                    let b = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
-                    nadir_render::f32_to_wav_s16(&b, nadir_render::MASTER_SR, &bed_path)?;
-                    Some(b)
-                } else {
-                    tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
-                    None
+                match nadir_render::resolve_bed(name) {
+                    Some(nadir_render::BedKind::ShapedNoise { low, high, tilt }) => {
+                        let b = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
+                        nadir_render::f32_to_wav_s16(&b, nadir_render::MASTER_SR, &bed_path)?;
+                        Some(b)
+                    }
+                    Some(nadir_render::BedKind::TonalTriad { octave, fade_s }) => {
+                        let b = nadir_render::bed_tonal_triad(&sc, dur_s, octave, fade_s);
+                        let low = 60.0 / nadir_render::MASTER_SR as f32;
+                        let high = 2500.0 / nadir_render::MASTER_SR as f32;
+                        let shaped = nadir_render::band_limit_via_csdr(&b, low, high, 0.02)
+                            .unwrap_or(b);
+                        nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &bed_path)?;
+                        Some(shaped)
+                    }
+                    None => {
+                        tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
+                        None
+                    }
                 }
             } else {
                 None
