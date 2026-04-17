@@ -13,7 +13,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Nadir_Singleton <ns@bedwards.github.io>"]
 license = "MIT"
@@ -34,14 +34,14 @@ hound = "3"
 fs-err = "2"
 camino = { version = "1", features = ["serde1"] }
 
-nadir-core = { path = "crates/nadir-core", version = "0.1.0" }
-nadir-vox = { path = "crates/nadir-vox", version = "0.1.0" }
-nadir-dsp = { path = "crates/nadir-dsp", version = "0.1.0" }
-nadir-feat = { path = "crates/nadir-feat", version = "0.1.0" }
-nadir-praat = { path = "crates/nadir-praat", version = "0.1.0" }
-nadir-compose = { path = "crates/nadir-compose", version = "0.1.0" }
-nadir-render = { path = "crates/nadir-render", version = "0.1.0" }
-nadir-vad = { path = "crates/nadir-vad", version = "0.1.0" }
+nadir-core = { path = "crates/nadir-core", version = "0.2.0" }
+nadir-vox = { path = "crates/nadir-vox", version = "0.2.0" }
+nadir-dsp = { path = "crates/nadir-dsp", version = "0.2.0" }
+nadir-feat = { path = "crates/nadir-feat", version = "0.2.0" }
+nadir-praat = { path = "crates/nadir-praat", version = "0.2.0" }
+nadir-compose = { path = "crates/nadir-compose", version = "0.2.0" }
+nadir-render = { path = "crates/nadir-render", version = "0.2.0" }
+nadir-vad = { path = "crates/nadir-vad", version = "0.2.0" }
 
 [profile.release]
 lto = "thin"

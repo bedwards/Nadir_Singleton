@@ -163,9 +163,15 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:11:10→10:11:47  feat(cli): song listen — render then play
+10:11:10→10:11:47  PR#76 feat(cli): song listen — render then play
   estimate: 0.7 min    actual: 0.62 min    delta: -0.08
   user-observable: nadir song listen --album X --track N [--bed-preset, --bpm] — one command instead of two
+```
+
+```
+10:12:30→10:13:15  feat(song) + bump: song audit standalone + v0.2.0 workspace bump
+  estimate: 1.5 min    actual: 0.75 min    delta: -0.75
+  user-observable: nadir song audit runs against existing stems (no re-render); workspace now 0.2.0 marking session 1 features
 ```
 
 ## rules of thumb (v0.1)
