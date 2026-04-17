@@ -83,13 +83,19 @@ pub fn plan_melody_phrased(
             let stress_boost = if stress >= 1.15 { 1 } else { 0 };
             let idx = (center_idx + offset_f.round() as i32 + jitter() + stress_boost)
                 .clamp(0, max_degree);
-            let dur_ms = if stress >= 1.15 {
+            let mut dur_ms = if stress >= 1.15 {
                 beat_ms
             } else if stress < 0.9 {
                 (beat_ms / 2).max(80)
             } else {
                 (beat_ms * 3 / 4).max(100)
             };
+            // Phrase-end rubato: last note stretches 1.25x, second-last 1.10x.
+            if plen >= 2 && k == plen - 1 {
+                dur_ms = (dur_ms as f32 * 1.25) as u32;
+            } else if plen >= 3 && k == plen - 2 {
+                dur_ms = (dur_ms as f32 * 1.10) as u32;
+            }
             notes.push(Note {
                 hz: degrees[idx as usize],
                 dur_ms,
@@ -233,7 +239,8 @@ mod tests {
         // primary stressed (1.2) at 120 bpm = 500ms beat
         let notes = plan_melody(&scale, &syls, 1, 220.0, 120.0, &[1.2, 0.85]);
         assert_eq!(notes[0].dur_ms, 500, "primary stress → full beat at 120 bpm");
-        assert_eq!(notes[1].dur_ms, 250, "unstressed → half beat at 120 bpm");
+        // Last note of a phrase gets 1.25x rubato: 250 → 312
+        assert_eq!(notes[1].dur_ms, 312, "unstressed last note → half beat × 1.25 rubato");
     }
 
     #[test]
