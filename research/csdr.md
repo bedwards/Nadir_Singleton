@@ -25,13 +25,38 @@ Two active forks matter in April 2026:
   the stable cut shipped in the OpenWebRX+ package.
 - A luarvique/csdr fork also exists on top of jketterl but we do not target it.
 
-**For Nadir\_Singleton we target `jketterl/csdr`.** Justification: the C++/
-CMake build survives clang on macOS arm64 without the NEON-intrinsics
-surgery ha7ilm's Makefile demands, libsamplerate gives us high-quality
-arbitrary-ratio resampling between our 48 kHz master and MBROLA's 16 kHz,
-and the runtime FIFO protocol matches our need to modulate effect params
-from `nadir-dsp`. The command surface in both forks is nearly identical —
-if we later need a ha7ilm-only block we can reach for its binary.
+**For Nadir\_Singleton we target `jketterl/csdr` where it builds, and fall
+back to `ha7ilm/csdr` where it does not.** The C++/CMake build survives
+clang on macOS arm64 without the NEON-intrinsics surgery ha7ilm's Makefile
+demands, libsamplerate gives us high-quality arbitrary-ratio resampling
+between our 48 kHz master and MBROLA's 16 kHz, and the runtime FIFO
+protocol matches our need to modulate effect params from `nadir-dsp`. The
+command surface in both forks is nearly identical — if we later need a
+ha7ilm-only block we can reach for its binary.
+
+### Per-platform fork choice (April 2026)
+
+| Platform          | Fork         | Rationale                                                         |
+|-------------------|--------------|-------------------------------------------------------------------|
+| Darwin arm64      | `jketterl`   | Apple-clang builds cleanly; libsamplerate + FIFO protocol.        |
+| Darwin x86_64     | `ha7ilm`     | macOS 26's Apple clang 16 fails to build jketterl src/lib C++.    |
+| Linux (CI)        | `ha7ilm`     | Matches what our verify workflow expects; no libsamplerate path.  |
+
+The jketterl build failure we observed on macOS 26 / x86\_64 manifested as
+four C++ compile errors in `src/lib/CMakeFiles/csdr.dir/exec.cpp.o` and
+`ringbuffer.cpp.o` — the typical "missing `<cstdint>` / `<cstring>`
+includes" regression that appears when Apple clang tightens its implicit
+header set. Rather than carry a drifting patch against upstream master we
+switch forks on that host. `scripts/bootstrap.sh` selects automatically
+based on `uname -s` / `uname -m`; override with
+`NADIR_CSDR_FORK=jketterl|ha7ilm`. If a downstream recipe relies on a
+jketterl-only block (`bandpass_fir_fft_cc --fifo`, `fastagc_ff` flag
+parsing), `nadir-dsp` flags it at graph-validate time.
+
+When the jketterl fork is the chosen target, `scripts/bootstrap.sh` also
+applies any patches under `scripts/patches/csdr-jketterl-*.patch` before
+configure. Reserve that directory for genuinely needed source fixes, not
+feature adds.
 
 ## Installation
 
