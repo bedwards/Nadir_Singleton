@@ -4,8 +4,8 @@ use nadir_core::{Note, Pho, PhoStream, PitchPoint, Scale};
 
 /// Assign scale-snapped pitches to a sequence of syllables.
 /// `stresses` maps each syllable to a duration weight (1.2 = primary, 0.85 = unstressed, 1.0 = neutral).
-/// `bpm` drives the base note duration: a beat is 60000/bpm ms; stressed syllables get a full beat,
-/// unstressed get half a beat.
+/// `bpm` drives the base note duration. Equivalent to `plan_melody_phrased` with
+/// a single phrase covering every syllable.
 pub fn plan_melody(
     scale: &Scale,
     syllables: &[String],
@@ -14,17 +14,27 @@ pub fn plan_melody(
     bpm: f32,
     stresses: &[f32],
 ) -> Vec<Note> {
+    plan_melody_phrased(scale, syllables, &[syllables.len()], seed, center_hz, bpm, stresses)
+}
+
+/// Phrase-shaped melody. `phrase_lens[i]` is the number of syllables in phrase i
+/// (must sum to syllables.len()). Each phrase gets a deterministic contour
+/// (arc-up, arc-down, ascent, descent, return) chosen from the seed + phrase index.
+pub fn plan_melody_phrased(
+    scale: &Scale,
+    syllables: &[String],
+    phrase_lens: &[usize],
+    seed: u64,
+    center_hz: f32,
+    bpm: f32,
+    stresses: &[f32],
+) -> Vec<Note> {
     let beat_ms = (60000.0 / bpm.max(1.0)) as u32;
-    let mut rng_state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15);
-    let mut step = || -> i32 {
-        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
-        ((rng_state >> 32) as i32 % 3) - 1
-    };
     let degrees = scale.degrees_hz(0);
     if degrees.is_empty() {
         return vec![];
     }
-    let mut idx = degrees
+    let center_idx = degrees
         .iter()
         .enumerate()
         .min_by(|a, b| {
@@ -35,23 +45,58 @@ pub fn plan_melody(
         })
         .map(|(i, _)| i as i32)
         .unwrap_or(0);
+    // Range in scale-degree units for phrase contour amplitude.
+    let range: i32 = 3;
+
+    // LCG for jitter
+    let mut rng_state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15);
+    let mut jitter = || -> i32 {
+        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        match (rng_state >> 32) as u32 % 5 {
+            0 => -1,
+            1 | 2 | 3 => 0,
+            _ => 1,
+        }
+    };
+
     let mut notes = Vec::with_capacity(syllables.len());
-    for (i, s) in syllables.iter().enumerate() {
-        idx = (idx + step()).clamp(0, degrees.len() as i32 - 1);
-        let stress = stresses.get(i).copied().unwrap_or(1.0);
-        // primary stress (≥1.2) → full beat, unstressed (<0.9) → half beat, else 3/4
-        let dur_ms = if stress >= 1.15 {
-            beat_ms
-        } else if stress < 0.9 {
-            (beat_ms / 2).max(80)
-        } else {
-            (beat_ms * 3 / 4).max(100)
-        };
-        notes.push(Note {
-            hz: degrees[idx as usize],
-            dur_ms,
-            syllable: s.clone(),
-        });
+    let mut syl_cursor = 0usize;
+    let max_degree = degrees.len() as i32 - 1;
+
+    for (p, &plen) in phrase_lens.iter().enumerate() {
+        if plen == 0 {
+            continue;
+        }
+        let contour_kind = ((seed.wrapping_add(p as u64 * 0x9E3779B9)) >> 40) % 5;
+        for k in 0..plen {
+            let i = syl_cursor + k;
+            let u = if plen == 1 { 0.5 } else { k as f32 / (plen - 1) as f32 };
+            let offset_f = match contour_kind {
+                0 => (std::f32::consts::PI * u).sin() * range as f32,          // arc-up
+                1 => -(std::f32::consts::PI * u).sin() * range as f32,         // arc-down
+                2 => (u * 2.0 - 1.0) * range as f32,                            // ascent
+                3 => (1.0 - u * 2.0) * range as f32,                            // descent
+                _ => ((std::f32::consts::PI * 2.0 * u).sin() * 0.5) * range as f32, // return
+            };
+            let stress = stresses.get(i).copied().unwrap_or(1.0);
+            // Stress boost: primary-stressed syllables nudge toward contour peak
+            let stress_boost = if stress >= 1.15 { 1 } else { 0 };
+            let idx = (center_idx + offset_f.round() as i32 + jitter() + stress_boost)
+                .clamp(0, max_degree);
+            let dur_ms = if stress >= 1.15 {
+                beat_ms
+            } else if stress < 0.9 {
+                (beat_ms / 2).max(80)
+            } else {
+                (beat_ms * 3 / 4).max(100)
+            };
+            notes.push(Note {
+                hz: degrees[idx as usize],
+                dur_ms,
+                syllable: syllables[i].clone(),
+            });
+        }
+        syl_cursor += plen;
     }
     notes
 }
@@ -89,6 +134,18 @@ pub fn render_vox_pho(notes: &[Note], phonemes_per_syl: &[Vec<String>]) -> PhoSt
 mod tests {
     use super::*;
     use nadir_core::{Key, ScaleKind};
+
+    #[test]
+    fn phrase_contour_lengths() {
+        let scale = Scale::new(Key::A, ScaleKind::Minor);
+        let syls: Vec<String> = "a b c d e f".split_whitespace().map(str::to_string).collect();
+        let notes = plan_melody_phrased(&scale, &syls, &[2, 4], 7, 220.0, 96.0, &[1.0; 6]);
+        assert_eq!(notes.len(), 6);
+        for n in &notes {
+            let snapped = scale.snap(n.hz);
+            assert!((n.hz - snapped).abs() < 0.001);
+        }
+    }
 
     #[test]
     fn melody_stays_in_scale() {
