@@ -1,0 +1,27 @@
+[track]
+n = 1
+slug = "01_first_descent"
+title = "First Descent"
+key = "A"
+scale = "minor"
+bpm = 52
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the descent begins; pitch stability falters; we still carry full syllables"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution"]
+reprises = ["m.vowel_drone", "m.dawn_utterance"]
+
+[targets]
+tessitura_hz = [120, 360]
+pitch_error_ceiling_cents = 4.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

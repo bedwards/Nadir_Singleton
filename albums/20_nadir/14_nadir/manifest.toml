@@ -1,0 +1,27 @@
+[track]
+n = 14
+slug = "14_nadir"
+title = "Nadir"
+key = "A"
+scale = "custom"
+bpm = 40
+meter = [4, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the final utterance of the corpus; only calibrated silences and aspirated breath spelling NADIR in Morse"
+motifs = ["m.nadir_silence"]
+carries = ["de-resolution", "arrival"]
+reprises = ["m.vowel_drone", "m.letter_cadence", "m.singleton_spine", "m.drift_delta", "m.dawn_utterance"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 99.0
+vox_loudness_lufs = -26.0
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

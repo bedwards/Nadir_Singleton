@@ -1,0 +1,27 @@
+[track]
+n = 5
+slug = "05_the_middle_register_vacates"
+title = "The Middle Register Vacates"
+key = "A"
+scale = "custom"
+bpm = 44
+meter = [4, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "energy departs the mid-band; only extremes remain; spectral hollowing"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "hollowing"]
+reprises = ["m.fir_blessing", "m.pollen_formant"]
+
+[targets]
+tessitura_hz = [100, 280]
+pitch_error_ceiling_cents = 18.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

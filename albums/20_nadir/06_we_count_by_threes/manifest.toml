@@ -1,0 +1,27 @@
+[track]
+n = 6
+slug = "06_we_count_by_threes"
+title = "We Count by Threes"
+key = "A"
+scale = "custom"
+bpm = 42
+meter = [3, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "meter thins to three; only every third beat carries a syllable"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "metric decay"]
+reprises = ["m.feature_vector_waltz", "m.onset_volley"]
+
+[targets]
+tessitura_hz = [95, 260]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -20.5
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

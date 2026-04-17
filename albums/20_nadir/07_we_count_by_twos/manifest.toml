@@ -1,0 +1,27 @@
+[track]
+n = 7
+slug = "07_we_count_by_twos"
+title = "We Count by Twos"
+key = "A"
+scale = "custom"
+bpm = 40
+meter = [2, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "meter thins to two; one syllable then silence; binary decay"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "binary decay"]
+reprises = ["m.plosive_rhythm", "m.room_impulse"]
+
+[targets]
+tessitura_hz = [90, 240]
+pitch_error_ceiling_cents = 22.0
+vox_loudness_lufs = -21.0
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

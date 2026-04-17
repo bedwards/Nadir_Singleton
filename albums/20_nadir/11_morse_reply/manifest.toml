@@ -1,0 +1,27 @@
+[track]
+n = 11
+slug = "11_morse_reply"
+title = "Morse Reply"
+key = "A"
+scale = "custom"
+bpm = 40
+meter = [4, 4]
+bars = 10
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a reply arrives; the signal is partially decoded; two letters land"
+motifs = ["m.nadir_silence"]
+carries = ["de-resolution", "response"]
+reprises = ["m.letter_cadence", "m.onset_volley"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 99.0
+vox_loudness_lufs = -24.5
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"
