@@ -145,6 +145,17 @@ pub enum SongSub {
         #[arg(long)]
         track: u8,
     },
+    /// Render a track, then play it.
+    Listen {
+        #[arg(long)]
+        album: String,
+        #[arg(long)]
+        track: u8,
+        #[arg(long)]
+        bed_preset: Option<String>,
+        #[arg(long)]
+        bpm: Option<f32>,
+    },
 }
 
 // ─────────── vox ───────────
@@ -953,6 +964,36 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
         SongSub::Audit { album, track } => {
             println!("audit stub — album={album} track={track}");
             Ok(())
+        }
+        SongSub::Listen { album, track, bed_preset, bpm } => {
+            let exe = std::env::current_exe()?;
+            let mut args: Vec<String> = vec![
+                "song".into(), "render".into(),
+                "--album".into(), album.clone(),
+                "--track".into(), track.to_string(),
+            ];
+            if let Some(bp) = bed_preset { args.push("--bed-preset".into()); args.push(bp); }
+            if let Some(b) = bpm { args.push("--bpm".into()); args.push(b.to_string()); }
+            let status = std::process::Command::new(&exe).args(&args).status()?;
+            if !status.success() {
+                anyhow::bail!("song render failed");
+            }
+            // Locate render.wav
+            let album_dir = std::path::Path::new("albums").join(&album);
+            let mut found: Option<std::path::PathBuf> = None;
+            for entry in fs_err::read_dir(&album_dir)? {
+                let entry = entry?;
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if let Some((num, _)) = name.split_once('_') {
+                    if num.parse::<u8>().ok() == Some(track) {
+                        found = Some(entry.path().join("render.wav"));
+                        break;
+                    }
+                }
+            }
+            let r = found.context("render.wav not found after render")?;
+            dispatch_play(&r)
         }
     }
 }

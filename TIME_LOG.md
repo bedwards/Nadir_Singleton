@@ -157,9 +157,15 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:09:35→10:10:34  feat(compose): phrase-ending rubato (last note 1.25×, penultimate 1.10×)
+10:09:35→10:10:34  PR#75 feat(compose): phrase-ending rubato (last note 1.25×, penultimate 1.10×)
   estimate: 1.0 min    actual: 0.98 min    delta: -0.02 (on the money — small compose edit + test update)
   user-observable: phrases end with a natural rallentando instead of a hard cut on the beat grid
+```
+
+```
+10:11:10→10:11:47  feat(cli): song listen — render then play
+  estimate: 0.7 min    actual: 0.62 min    delta: -0.08
+  user-observable: nadir song listen --album X --track N [--bed-preset, --bpm] — one command instead of two
 ```
 
 ## rules of thumb (v0.1)
