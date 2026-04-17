@@ -1,0 +1,139 @@
+--- a/src/lib/ringbuffer.cpp
++++ b/src/lib/ringbuffer.cpp
+@@ -21,6 +21,13 @@
+ #include "complex.hpp"
+ 
+ #include <sys/mman.h>
++#include <unistd.h>
++#include <fcntl.h>
++#ifdef __APPLE__
++#include <sys/stat.h>
++#include <stdio.h>
++#include <errno.h>
++#endif
+ 
+ using namespace Csdr;
+ 
+@@ -49,6 +56,41 @@
+ 
+     int counter = 10;
+     while (counter-- > 0) {
++#ifdef __APPLE__
++        // macOS has no mremap. Use shm_open + mmap twice at MAP_FIXED offsets
++        // so the second half of the allocation mirrors the first, giving us
++        // the wrap-free ring-buffer trick.
++        char shm_name[64];
++        snprintf(shm_name, sizeof(shm_name), "/csdr.rb.%d.%d", (int)getpid(), counter);
++        int fd = shm_open(shm_name, O_RDWR | O_CREAT | O_EXCL, 0600);
++        if (fd < 0) {
++            continue;
++        }
++        shm_unlink(shm_name);
++        if (ftruncate(fd, bytes) != 0) {
++            ::close(fd);
++            continue;
++        }
++        auto addr = static_cast<unsigned char*>(::mmap(NULL, 2 * bytes, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0));
++        if (addr == MAP_FAILED) {
++            ::close(fd);
++            continue;
++        }
++        auto addr1 = static_cast<unsigned char*>(::mmap(addr, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0));
++        if (addr1 != addr) {
++            ::munmap(addr, 2 * bytes);
++            ::close(fd);
++            continue;
++        }
++        auto addr2 = static_cast<unsigned char*>(::mmap(addr + bytes, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0));
++        if (addr2 != addr + bytes) {
++            ::munmap(addr, 2 * bytes);
++            ::close(fd);
++            continue;
++        }
++        ::close(fd);
++        return (T*) addr;
++#else
+         auto addr = static_cast<unsigned char*>(::mmap(NULL, 2 * bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
+ 
+         if (addr == MAP_FAILED) {
+@@ -73,6 +115,7 @@
+         }
+ 
+         return (T*) addr;
++#endif
+     }
+ 
+     return nullptr;
+--- a/src/lib/fir.cpp
++++ b/src/lib/fir.cpp
+@@ -39,6 +39,14 @@
+ 
+ #include <iostream>
+ 
++#ifdef __APPLE__
++// macOS ships __sincosf; provide sincosf as a portable fallback.
++static inline void sincosf(float x, float* s, float* c) {
++    *s = sinf(x);
++    *c = cosf(x);
++}
++#endif
++
+ using namespace Csdr;
+ 
+ template <typename T, typename U>
+--- a/src/lib/shift.cpp
++++ b/src/lib/shift.cpp
+@@ -34,6 +34,13 @@
+ 
+ #include <cmath>
+ 
++#ifdef __APPLE__
++static inline void sincosf(float x, float* s, float* c) {
++    *s = sinf(x);
++    *c = cosf(x);
++}
++#endif
++
+ using namespace Csdr;
+ 
+ Shift::Shift(float rate): rate(rate) {}
+--- a/src/lib/exec.cpp
++++ b/src/lib/exec.cpp
+@@ -21,10 +21,13 @@
+ 
+ #include <unistd.h>
+ #include <sys/wait.h>
++#include <sys/types.h>
++#include <signal.h>
+ #include <thread>
+ #include <utility>
+ #include <iostream>
+ #include <cstring>
++#include <vector>
+ #include <fcntl.h>
+ #include <poll.h>
+ 
+@@ -135,8 +138,8 @@
+         kill(child_pid, SIGTERM);
+         if (flushSize > 0) {
+             fcntl(this->writePipe, F_SETFL, fcntl(this->writePipe, F_GETFL) & ~O_NONBLOCK);
+-            T toflush[flushSize] = {0};
+-            write(this->writePipe, &toflush, sizeof(T) * flushSize);
++            std::vector<T> toflush(flushSize, T{});
++            write(this->writePipe, toflush.data(), sizeof(T) * flushSize);
+         }
+         // this probably has no effect
+         closePipes();
+--- a/src/lib/noise.cpp
++++ b/src/lib/noise.cpp
+@@ -66,8 +66,8 @@
+     fread(output, sizeof(complex<float>), length, random);
+     for(int i = 0; i < length * 2; i++) {
+         complex<float> tempi = {
+-                pioutput[i * 2],
+-                pioutput[i * 2 + 1]
++                (float) pioutput[i * 2],
++                (float) pioutput[i * 2 + 1]
+         };
+         output[i] = {
+                 tempi.i() / ((float) (INT_MAX)),

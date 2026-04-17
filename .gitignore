@@ -38,3 +38,5 @@ render.scratch/
 # Logs
 *.log
 logs/
+
+.claude/

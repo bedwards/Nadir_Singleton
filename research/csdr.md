@@ -38,18 +38,31 @@ ha7ilm-only block we can reach for its binary.
 
 | Platform          | Fork         | Rationale                                                         |
 |-------------------|--------------|-------------------------------------------------------------------|
-| Darwin arm64      | `jketterl`   | Apple-clang builds cleanly; libsamplerate + FIFO protocol.        |
-| Darwin x86_64     | `ha7ilm`     | macOS 26's Apple clang 16 fails to build jketterl src/lib C++.    |
+| Darwin arm64      | `ha7ilm`     | Matches nadir-dsp's ha7ilm-style command names; builds under clang.|
+| Darwin x86_64     | `ha7ilm`     | Same; jketterl is buildable via the x86_64 patch as an opt-in.    |
 | Linux (CI)        | `ha7ilm`     | Matches what our verify workflow expects; no libsamplerate path.  |
 
-The jketterl build failure we observed on macOS 26 / x86\_64 manifested as
-four C++ compile errors in `src/lib/CMakeFiles/csdr.dir/exec.cpp.o` and
-`ringbuffer.cpp.o` — the typical "missing `<cstdint>` / `<cstring>`
-includes" regression that appears when Apple clang tightens its implicit
-header set. Rather than carry a drifting patch against upstream master we
-switch forks on that host. `scripts/bootstrap.sh` selects automatically
-based on `uname -s` / `uname -m`; override with
-`NADIR_CSDR_FORK=jketterl|ha7ilm`. If a downstream recipe relies on a
+The default on every host is ha7ilm because every preset in
+`crates/nadir-dsp/src/presets.rs` names blocks with ha7ilm's suffix
+convention (`convert_s16_f`, `fir_interpolate_cc`, `bandpass_fir_fft_cc`,
+…), which the jketterl CLI collapsed into shorter family names (`convert`,
+`firdecimate`, `bandpass`). Switching the default would silently break
+every render. `scripts/bootstrap.sh` keeps ha7ilm on every platform and
+accepts `NADIR_CSDR_FORK=jketterl` as an opt-in escape hatch for users who
+want to experiment with the modern fork.
+
+The jketterl fork is still supported for explicit opt-in builds. On Darwin
+arm64 the existing `scripts/patches/csdr-jketterl-macos-arm64.patch` fixes
+a CMake regex and a `cat /proc/cpuinfo` call. On Darwin x86_64 the stock
+jketterl build additionally fails because the Linux `mremap` ring-buffer
+trick in `src/lib/ringbuffer.cpp` has no macOS equivalent, Apple's libm
+exposes `__sincosf` instead of `sincosf`, and `exec.cpp` relies on a GCC
+VLA extension Apple clang rejects. We carry
+`scripts/patches/csdr-jketterl-macos-x86_64.patch` which swaps in
+`shm_open`+`mmap` at `MAP_FIXED` offsets for the ring-buffer mirror,
+injects a static-inline `sincosf` shim, and replaces the VLA with a
+`std::vector`. All edits are guarded by `#ifdef __APPLE__` so Linux stays
+on the unmodified upstream path. If a downstream recipe relies on a
 jketterl-only block (`bandpass_fir_fft_cc --fifo`, `fastagc_ff` flag
 parsing), `nadir-dsp` flags it at graph-validate time.
 
@@ -582,6 +595,13 @@ SHA256, so renders are reproducible.
 - **`csdr =<expr>`** imports `os` and `sys` — never feed it untrusted input.
 - **Pipe buffer is 64 KiB on macOS** (~0.3 s of 48 kHz f32 mono). A stage
   that blocks longer than that stalls upstream.
+- **Darwin x86_64 companion patch.** On Intel Macs we ship
+  `scripts/patches/csdr-jketterl-macos-x86_64.patch` which substitutes
+  `shm_open` + `mmap` (mirrored `MAP_FIXED` offsets) for the Linux-only
+  `mremap` ring-buffer trick, provides a `sincosf` shim for Apple libm, and
+  replaces a non-portable VLA in `exec.cpp` with a `std::vector`. The patch
+  applies cleanly from the jketterl source root and is a no-op on Linux via
+  `#ifdef __APPLE__` guards.
 
 ## How we use it in Nadir\_Singleton
 
