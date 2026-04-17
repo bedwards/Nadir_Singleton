@@ -851,26 +851,27 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let pulses_path = stems_dir.join("pulses.wav");
 
             let bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
-                match nadir_render::resolve_bed(name) {
+                let mut raw = match nadir_render::resolve_bed(name) {
                     Some(nadir_render::BedKind::ShapedNoise { low, high, tilt }) => {
-                        let b = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
-                        nadir_render::f32_to_wav_s16(&b, nadir_render::MASTER_SR, &bed_path)?;
-                        Some(b)
+                        Some(nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?)
                     }
                     Some(nadir_render::BedKind::TonalTriad { octave, fade_s }) => {
                         let b = nadir_render::bed_tonal_triad(&sc, dur_s, octave, fade_s);
                         let low = 60.0 / nadir_render::MASTER_SR as f32;
                         let high = 2500.0 / nadir_render::MASTER_SR as f32;
-                        let shaped = nadir_render::band_limit_via_csdr(&b, low, high, 0.02)
-                            .unwrap_or(b);
-                        nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &bed_path)?;
-                        Some(shaped)
+                        Some(nadir_render::band_limit_via_csdr(&b, low, high, 0.02).unwrap_or(b))
                     }
                     None => {
                         tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
                         None
                     }
+                };
+                if let Some(ref mut b) = raw {
+                    // Slow breath tremolo at 0.22 Hz, 30% depth — gives the bed life.
+                    nadir_render::amp_tremolo(b, 0.22, 0.30);
+                    nadir_render::f32_to_wav_s16(b, nadir_render::MASTER_SR, &bed_path)?;
                 }
+                raw
             } else {
                 None
             };

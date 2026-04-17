@@ -175,11 +175,18 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:14:26→10:16:06  feat(render): multi-tap delay on vocal before mix
+10:14:26→10:16:06  PR#78 feat(render): multi-tap delay on vocal before mix
   estimate: 1.5 min    actual: 1.67 min    delta: +0.17 (first over-run — wrapper
   fn approach needed one extra iteration, grep-edit workflow added overhead)
   user-observable: songs gain a hall-like sense of space (default taps 187/311/523 ms,
   ~20% decay); vocal echo extends the render tail ~2.5s
+```
+
+```
+10:17:05→10:17:59  feat(render): slow tremolo breath on bed
+  estimate: 1.0 min    actual: 0.90 min    delta: -0.10
+  user-observable: bed breathes at 0.22 Hz (~one cycle per 4.5 s) ±15% — static
+  drones now have organic motion
 ```
 
 ## rules of thumb (v0.1)
