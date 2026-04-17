@@ -225,12 +225,20 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-16:03:16→16:05:07  fix(audit): trim top 5% outlier frames + PSOLA dead-zone
+16:03:16→16:05:07  PR#92 fix(audit): trim top 5% outlier frames + PSOLA dead-zone
   estimate: 1.5 min    actual: 1.85 min    delta: +0.35
   user-observable: album 01 audit numbers collapse from 8–64¢ range (mean ~20¢)
   to 2.7–17.3¢ range (mean ~6¢). Tracker transition glitches no longer dominate
   the metric; PSOLA dead-zone (±15¢) avoids re-quantizing already-in-tune frames.
   Result: audit now reflects perceived quality, not tracker artifact.
+```
+
+```
+16:06:09→16:07:03  feat(compose): final-phrase cadence to tonic
+  estimate: 1.0 min    actual: 0.90 min    delta: -0.10
+  user-observable: last note of last phrase lands on tonic (scale degree 0),
+  penultimate on supertonic — songs end with musical finality instead of
+  wherever the contour left off
 ```
 
 ## rules of thumb (v0.1)
