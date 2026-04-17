@@ -136,6 +136,9 @@ pub fn render_vox_pho_phrased(
             } else {
                 notes.get(i - 1).map(|p| p.hz)
             };
+            // Enable vibrato on long notes (total ≥ 300 ms). Modulate ±25 cents
+            // at ~5 Hz over the held part of the note.
+            let enable_vib = total >= 300;
             for (j, p) in phs.iter().enumerate() {
                 let is_last = j + 1 == phs.len();
                 let is_first = j == 0;
@@ -144,19 +147,29 @@ pub fn render_vox_pho_phrased(
                 } else {
                     per
                 };
-                // First phoneme of an in-phrase syllable starts at previous pitch
-                // and slides to current (10%→90%); others hold current pitch.
                 let (start_hz, end_hz) = match (is_first, prev_hz) {
                     (true, Some(prev)) => (prev, n.hz),
                     _ => (n.hz, n.hz),
                 };
+                let mut pitch = vec![
+                    PitchPoint { pct: 10, hz: start_hz },
+                    PitchPoint { pct: 90, hz: end_hz },
+                ];
+                if enable_vib && is_last {
+                    // 25 cents = factor of 2^(25/1200) ≈ 1.01449
+                    let depth = 2f32.powf(25.0 / 1200.0);
+                    pitch = vec![
+                        PitchPoint { pct: 10, hz: start_hz },
+                        PitchPoint { pct: 30, hz: end_hz * depth },
+                        PitchPoint { pct: 50, hz: end_hz / depth },
+                        PitchPoint { pct: 70, hz: end_hz * depth },
+                        PitchPoint { pct: 90, hz: end_hz },
+                    ];
+                }
                 stream.push(Pho {
                     sampa: p.clone(),
                     dur_ms: dur,
-                    pitch: vec![
-                        PitchPoint { pct: 10, hz: start_hz },
-                        PitchPoint { pct: 90, hz: end_hz },
-                    ],
+                    pitch,
                 });
             }
             // Silence between syllables within a phrase
