@@ -102,31 +102,59 @@ pub fn plan_melody_phrased(
 }
 
 /// Convert (syllable,phoneme-list,dur,hz) into a PhoStream with pitch anchors.
+/// Single-phrase shim for callers that haven't adopted phrase-aware breaths.
 pub fn render_vox_pho(notes: &[Note], phonemes_per_syl: &[Vec<String>]) -> PhoStream {
+    render_vox_pho_phrased(notes, phonemes_per_syl, &[notes.len()], 30, 400)
+}
+
+/// Phrase-aware variant: `phrase_lens[i]` = number of syllables in phrase i.
+/// Between syllables inside a phrase → `intra_ms` silence. At phrase boundaries
+/// (and after the last phrase) → `breath_ms` silence. Opening/closing silence
+/// = `breath_ms`.
+pub fn render_vox_pho_phrased(
+    notes: &[Note],
+    phonemes_per_syl: &[Vec<String>],
+    phrase_lens: &[usize],
+    intra_ms: u32,
+    breath_ms: u32,
+) -> PhoStream {
     let mut stream = PhoStream::new();
-    stream.push(Pho::silence(120));
-    for (n, phs) in notes.iter().zip(phonemes_per_syl) {
-        let total: u32 = n.dur_ms;
-        let per = (total / phs.len().max(1) as u32).max(40);
-        for (i, p) in phs.iter().enumerate() {
-            let is_last = i + 1 == phs.len();
-            let dur = if is_last {
-                total - per * (phs.len() as u32 - 1)
-            } else {
-                per
-            };
-            stream.push(Pho {
-                sampa: p.clone(),
-                dur_ms: dur,
-                pitch: vec![
-                    PitchPoint { pct: 10, hz: n.hz },
-                    PitchPoint { pct: 90, hz: n.hz },
-                ],
-            });
+    stream.push(Pho::silence(breath_ms));
+    let mut cursor = 0usize;
+    for (p_idx, &plen) in phrase_lens.iter().enumerate() {
+        for k in 0..plen {
+            let i = cursor + k;
+            if i >= notes.len() { break; }
+            let n = &notes[i];
+            let phs = &phonemes_per_syl[i];
+            let total: u32 = n.dur_ms;
+            let per = (total / phs.len().max(1) as u32).max(40);
+            for (j, p) in phs.iter().enumerate() {
+                let is_last = j + 1 == phs.len();
+                let dur = if is_last {
+                    total - per * (phs.len() as u32 - 1)
+                } else {
+                    per
+                };
+                stream.push(Pho {
+                    sampa: p.clone(),
+                    dur_ms: dur,
+                    pitch: vec![
+                        PitchPoint { pct: 10, hz: n.hz },
+                        PitchPoint { pct: 90, hz: n.hz },
+                    ],
+                });
+            }
+            // Silence between syllables within a phrase
+            if k + 1 < plen {
+                stream.push(Pho::silence(intra_ms));
+            }
         }
-        stream.push(Pho::silence(30));
+        cursor += plen;
+        // Breath between phrases (and after last phrase)
+        let is_last_phrase = p_idx + 1 == phrase_lens.len();
+        stream.push(Pho::silence(if is_last_phrase { breath_ms } else { breath_ms }));
     }
-    stream.push(Pho::silence(120));
     stream
 }
 
