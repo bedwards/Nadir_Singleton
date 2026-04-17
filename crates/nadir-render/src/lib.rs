@@ -103,6 +103,45 @@ pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Re
     Ok(())
 }
 
+/// RMS level in dBFS of the non-silent portion of `samples`.
+/// Samples below `silence_threshold` (default 0.001) are excluded so leading
+/// /trailing quiet doesn't drag the measurement down. This is not true ITU BS.1770
+/// LUFS (no K-weighting, no gating) — it's a first-order loudness proxy that
+/// tracks well enough for stem balance within a single render.
+pub fn rms_dbfs(samples: &[f32]) -> f32 {
+    let thr = 0.001f32;
+    let mut sum_sq = 0.0f64;
+    let mut n = 0u64;
+    for &s in samples {
+        if s.abs() > thr {
+            sum_sq += (s as f64) * (s as f64);
+            n += 1;
+        }
+    }
+    if n == 0 {
+        return f32::NEG_INFINITY;
+    }
+    let rms = (sum_sq / n as f64).sqrt();
+    20.0 * (rms as f32).log10()
+}
+
+/// Scale `samples` so measured RMS matches `target_dbfs`. If the input is
+/// silent (or the requested gain would exceed `max_gain_db`), returns the
+/// samples unchanged. Useful to normalize stems toward a target loudness
+/// before mixing.
+pub fn normalize_to_dbfs(samples: &mut [f32], target_dbfs: f32, max_gain_db: f32) {
+    let measured = rms_dbfs(samples);
+    if !measured.is_finite() {
+        return;
+    }
+    let delta = target_dbfs - measured;
+    let clamped = delta.clamp(-max_gain_db, max_gain_db);
+    let gain = 10f32.powf(clamped / 20.0);
+    for s in samples.iter_mut() {
+        *s *= gain;
+    }
+}
+
 /// Apply a sinusoidal amplitude envelope (tremolo) at `rate_hz` with `depth`
 /// in [0, 1]: depth=0 → no modulation, depth=0.3 → swings 70%..100% of input.
 /// Starts at phase 0 so the envelope begins near max (no attack click).

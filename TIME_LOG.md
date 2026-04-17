@@ -183,10 +183,30 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:17:05→10:17:59  feat(render): slow tremolo breath on bed
+10:17:05→10:17:59  PR#79 feat(render): slow tremolo breath on bed
   estimate: 1.0 min    actual: 0.90 min    delta: -0.10
   user-observable: bed breathes at 0.22 Hz (~one cycle per 4.5 s) ±15% — static
   drones now have organic motion
+```
+
+## 2026-04-17 (session 2, after x86_64 + CI fixup)
+
+```
+13:37:15→13:39:03  PR#88 fix(ci): fmt + clippy + g2p diphthongs (#85 #86 #87)
+  estimate: n/a (reactive; CI red)    actual: 1.8 min
+  user-observable: CI green; devs can land new PRs again
+```
+
+```
+15:53:36→15:57:29  feat(render): per-stem loudness normalization (RMS proxy for LUFS)
+  estimate: 2.0 min    actual: 3.88 min    delta: +1.88 (OVER)
+  lesson: #86 accepted test assertions that SAMPA standard wants lowercase
+  diphthongs (aI/eI/oU), but MBROLA us1 voice database uses EI/AI/@U. Fix
+  broke actual synthesis — revert mapping, correct tests to match us1 README.
+  Rule of thumb: before accepting a "spec compliance" test, verify the spec
+  matches the downstream tool's inventory.
+  user-observable: stems balance automatically toward per-stem targets
+  ([targets].vox_loudness_lufs=-14, bed=-22, pulse=-18 dBFS defaults)
 ```
 
 ## rules of thumb (v0.1)
