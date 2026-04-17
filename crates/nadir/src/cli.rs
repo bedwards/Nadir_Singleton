@@ -690,6 +690,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 hat: bool,
                 #[serde(default = "default_on")]
                 bass_arp: bool,
+                #[serde(default = "default_on")]
+                oohs: bool,
+                #[serde(default = "default_oohs_vowel")]
+                oohs_vowel: String,
                 #[serde(default = "default_echo_on")]
                 echo: bool,
                 #[serde(default = "default_echo_taps")]
@@ -744,6 +748,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             fn default_on() -> bool {
                 true
+            }
+            fn default_oohs_vowel() -> String {
+                // "u" is the richest low-formant MBROLA vowel across us1/us2/us3.
+                "u".into()
             }
             fn default_echo_taps() -> Vec<(u32, f32)> {
                 // (delay_ms, gain). Quick comb of small mid-time echoes ≈ hall sense.
@@ -824,6 +832,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 kick: default_on(),
                 hat: default_on(),
                 bass_arp: default_on(),
+                oohs: default_on(),
+                oohs_vowel: default_oohs_vowel(),
                 echo: default_echo_on(),
                 echo_taps: default_echo_taps(),
                 secondary_voices: Vec::new(),
@@ -1075,6 +1085,70 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 let samples = nadir_render::upsample_16_to_48_via_csdr(&sv_tuned)?;
                 secondary_stems.push((samples, sv.gain, sv.pan));
             }
+
+            // ── oohs (vowel-only held pad voice) ──
+            let oohs_stem_48k: Option<Vec<f32>> = if dsp_cfg.oohs {
+                // Substitute phonemes with just [oohs_vowel] per syllable; same
+                // plan_melody output drives pitch. MBROLA renders held vowels.
+                let vowel = dsp_cfg.oohs_vowel.clone();
+                let oohs_phonemes: Vec<Vec<String>> =
+                    (0..notes.len()).map(|_| vec![vowel.clone()]).collect();
+                let oohs_stream = nadir_compose::render_vox_pho_phrased(
+                    &notes,
+                    &oohs_phonemes,
+                    &phrase_lens,
+                    30,
+                    400,
+                );
+                let oohs_raw = work_dir.join("raw_oohs.wav");
+                let oohs_tuned = stems_dir.join("oohs.wav");
+                let oohs_cfg = MbrolaConfig {
+                    voice: m.track.mbrola_voice.clone(),
+                    ..Default::default()
+                };
+                match synth_to_wav(&oohs_cfg, &oohs_stream, &oohs_raw) {
+                    Ok(_) => {
+                        // Same PSOLA retarget as primary: extract F0, snap, retarget.
+                        let oohs_f0_csv = work_dir.join("f0_realized_oohs.csv");
+                        run_inline(&praat_cfg, &extract_f0_script(&oohs_raw, &oohs_f0_csv), &[])?;
+                        let oohs_f0_text = fs_err::read_to_string(&oohs_f0_csv)?;
+                        let oohs_realized: Vec<(f32, f32)> = oohs_f0_text
+                            .lines()
+                            .skip(1)
+                            .filter_map(|l| {
+                                let mut it = l.split(',');
+                                let t: f32 = it.next()?.parse().ok()?;
+                                let h: f32 = it.next()?.parse().ok()?;
+                                Some((t, h))
+                            })
+                            .collect();
+                        if oohs_realized.is_empty() {
+                            fs_err::copy(&oohs_raw, &oohs_tuned)?;
+                        } else {
+                            let oohs_target_csv = work_dir.join("f0_target_oohs.csv");
+                            {
+                                use std::io::Write;
+                                let mut f = std::fs::File::create(&oohs_target_csv)?;
+                                writeln!(f, "time_s,hz")?;
+                                for (t, hz) in &oohs_realized {
+                                    let snapped = sc.snap(*hz);
+                                    writeln!(f, "{t},{snapped}")?;
+                                }
+                            }
+                            let script =
+                                psola_retarget_script(&oohs_raw, &oohs_target_csv, &oohs_tuned);
+                            run_inline(&praat_cfg, &script, &[])?;
+                        }
+                        Some(nadir_render::upsample_16_to_48_via_csdr(&oohs_tuned)?)
+                    }
+                    Err(e) => {
+                        tracing::warn!(err=%e, "oohs synth failed, skipping");
+                        None
+                    }
+                }
+            } else {
+                None
+            };
 
             // ── bed + pulses + mix ──
             let vocal_info = hound::WavReader::open(&tuned_vox_path)?;
@@ -1341,6 +1415,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 nadir_render::normalize_to_dbfs(b, stem_default, 18.0);
                 nadir_render::f32_to_wav_s16(b, nadir_render::MASTER_SR, &bass_path)?;
             }
+            let mut oohs_stem_48k = oohs_stem_48k;
+            if let Some(ref mut o) = oohs_stem_48k {
+                nadir_render::normalize_to_dbfs(o, stem_default - 3.0, 18.0);
+            }
 
             let mut stems: Vec<(&[f32], f32, f32)> = Vec::new(); // (samples, gain, pan)
             if let Some(ref b) = bed {
@@ -1357,6 +1435,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             if let Some(ref b) = bass_stem {
                 stems.push((b.as_slice(), 0.7, -0.15));
+            }
+            if let Some(ref o) = oohs_stem_48k {
+                stems.push((o.as_slice(), 0.55, 0.1));
             }
             for (samples, gain, pan) in &secondary_stems {
                 stems.push((samples.as_slice(), *gain, *pan));
