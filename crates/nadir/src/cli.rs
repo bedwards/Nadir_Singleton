@@ -554,6 +554,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 octave: i32,
                 #[serde(default = "default_secondary_gain")]
                 gain: f32,
+                #[serde(default)]
+                pan: f32,
             }
             #[derive(Deserialize, Default)]
             struct DspFields {
@@ -572,6 +574,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 #[serde(default = "default_pulse_kind")]
                 pulse_kind: String,
                 #[serde(default)]
+                vocal_pan: f32,
+                #[serde(default = "default_bed_pan")]
+                bed_pan: f32,
+                #[serde(default = "default_pulse_pan")]
+                pulse_pan: f32,
+                #[serde(default)]
                 secondary_voices: Vec<SecondaryVoice>,
             }
             fn default_bpm() -> f32 { 96.0 }
@@ -584,6 +592,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse_ms() -> u32 { 25 }
             fn default_secondary_gain() -> f32 { 0.4 }
             fn default_pulse_kind() -> String { "noise".into() }
+            fn default_bed_pan() -> f32 { 0.0 }
+            fn default_pulse_pan() -> f32 { 0.0 }
             #[derive(Deserialize, Default)]
             struct TargetsFields {
                 #[serde(default)]
@@ -632,6 +642,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_gain: default_pulse_gain(),
                 pulse_ms: default_pulse_ms(),
                 pulse_kind: default_pulse_kind(),
+                vocal_pan: 0.0,
+                bed_pan: default_bed_pan(),
+                pulse_pan: default_pulse_pan(),
                 secondary_voices: Vec::new(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
@@ -733,7 +746,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
 
             // ── secondary voices (duet stack) ──
-            let mut secondary_stems: Vec<(Vec<f32>, f32)> = Vec::new();
+            let mut secondary_stems: Vec<(Vec<f32>, f32, f32)> = Vec::new(); // (samples, gain, pan)
             for sv in &dsp_cfg.secondary_voices {
                 // Re-G2P for this voice (lexicon maps to voice-appropriate phonemes)
                 let sv_g2p = Command::new("uv")
@@ -796,7 +809,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     run_inline(&praat_cfg, &sv_script, &[])?;
                 }
                 let samples = nadir_render::upsample_16_to_48_via_csdr(&sv_tuned)?;
-                secondary_stems.push((samples, sv.gain));
+                secondary_stems.push((samples, sv.gain, sv.pan));
             }
 
             // ── bed + pulses + mix ──
@@ -866,23 +879,24 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 None
             };
 
-            let mut stems: Vec<(&[f32], f32)> = Vec::new();
+            let mut stems: Vec<(&[f32], f32, f32)> = Vec::new(); // (samples, gain, pan)
             if let Some(ref b) = bed {
-                stems.push((b.as_slice(), dsp_cfg.bed_gain));
+                stems.push((b.as_slice(), dsp_cfg.bed_gain, dsp_cfg.bed_pan));
             }
             if let Some(ref p) = pulses {
-                stems.push((p.as_slice(), dsp_cfg.pulse_gain));
+                stems.push((p.as_slice(), dsp_cfg.pulse_gain, dsp_cfg.pulse_pan));
             }
-            for (samples, gain) in &secondary_stems {
-                stems.push((samples.as_slice(), *gain));
+            for (samples, gain, pan) in &secondary_stems {
+                stems.push((samples.as_slice(), *gain, *pan));
             }
-            if stems.is_empty() {
+            if stems.is_empty() && dsp_cfg.vocal_pan == 0.0 {
                 fs_err::copy(&tuned_vox_path, &dest)?;
             } else {
-                nadir_render::mix_stems_to_wav(
+                nadir_render::mix_stems_stereo(
                     &tuned_vox_path,
                     &stems,
                     dsp_cfg.vocal_gain,
+                    dsp_cfg.vocal_pan,
                     &dest,
                 )?;
             }

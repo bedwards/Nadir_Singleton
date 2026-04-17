@@ -136,10 +136,17 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:00:13→10:01:28  feat(render): pitched-pulse option for rhythm track
+10:00:13→10:01:28  PR#67 feat(render): pitched-pulse option for rhythm track
   estimate: 1.5 min    actual: 1.25 min    delta: -0.25
   user-observable: [dsp].pulse_kind = "tonic" replaces noise bursts with
   fast-decaying sine bursts at the scale tonic (octave -2), giving a kick-drum feel
+```
+
+```
+10:02:23→10:04:17  feat(render): stereo mix + per-voice pan
+  estimate: 4.5 min    actual: 1.90 min    delta: -2.60 (huge over-estimate; stereo
+  looked scary but was add-a-channel-to-hound + mirror the mix loop + new fields)
+  user-observable: renders are stereo WAVs; secondary voices can pan L/R via manifest
 ```
 
 ## rules of thumb (v0.1)
