@@ -1,0 +1,26 @@
+[track]
+n = 15
+slug = "15_dime_store_valentine"
+title = "Dime Store Valentine"
+key = "C"
+scale = "major"
+bpm = 108
+meter = [4, 4]
+bars = 32
+form = "verse/chorus"
+mbrola_voice = "us1"
+
+[narrative]
+role = "uptempo sweetheart song; a valentine bought for a dime and meant for a year"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [210, 540]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

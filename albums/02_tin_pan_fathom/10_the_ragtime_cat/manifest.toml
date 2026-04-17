@@ -1,0 +1,26 @@
+[track]
+n = 10
+slug = "10_the_ragtime_cat"
+title = "The Ragtime Cat"
+key = "G"
+scale = "major"
+bpm = 128
+meter = [2, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "jaunty ragtime feature; the alley cat who stops to hear the piano"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [230, 600]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

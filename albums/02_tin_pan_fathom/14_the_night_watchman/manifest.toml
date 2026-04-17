@@ -1,0 +1,26 @@
+[track]
+n = 14
+slug = "14_the_night_watchman"
+title = "The Night Watchman"
+key = "A"
+scale = "major"
+bpm = 94
+meter = [4, 4]
+bars = 36
+form = "12-bar"
+mbrola_voice = "us3"
+
+[narrative]
+role = "character study; the night watchman making his patient rounds"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [170, 480]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

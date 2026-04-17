@@ -1,0 +1,26 @@
+[track]
+n = 3
+slug = "03_lighthouse_lil"
+title = "Lighthouse Lil"
+key = "G"
+scale = "major"
+bpm = 88
+meter = [4, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "character study; a lighthouse keeper who polishes the lamp and the story"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [160, 480]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

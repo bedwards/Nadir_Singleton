@@ -1,0 +1,26 @@
+[track]
+n = 18
+slug = "18_goodnight_tin_pan"
+title = "Goodnight, Tin Pan"
+key = "C"
+scale = "major"
+bpm = 68
+meter = [4, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "closer; the album tips its hat and puts the lamps out"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [160, 440]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

@@ -9,4 +9,4 @@ palette = "TPA harmonic turns on diphones"
 arc = "vaudeville ghosts of Tin Pan Alley push diphone voices through old forms."
 
 [corpus]
-motifs = []
+motifs = ["m.tin_pan_turnaround", "m.hook"]

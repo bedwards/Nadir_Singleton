@@ -1,0 +1,26 @@
+[track]
+n = 16
+slug = "16_old_piano_in_the_hall"
+title = "Old Piano in the Hall"
+key = "F"
+scale = "major"
+bpm = 72
+meter = [4, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us3"
+
+[narrative]
+role = "ballad for the instrument itself; an out-of-tune upright that knows every song"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [170, 460]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

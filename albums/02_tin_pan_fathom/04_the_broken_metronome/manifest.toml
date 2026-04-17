@@ -1,0 +1,26 @@
+[track]
+n = 4
+slug = "04_the_broken_metronome"
+title = "The Broken Metronome"
+key = "D"
+scale = "major"
+bpm = 100
+meter = [4, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "character study; a metronome whose click wanders, making friends with the tune"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [200, 520]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"

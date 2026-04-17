@@ -1,0 +1,26 @@
+[track]
+n = 12
+slug = "12_honey_in_the_reel"
+title = "Honey in the Reel"
+key = "Bb"
+scale = "major"
+bpm = 100
+meter = [4, 4]
+bars = 32
+form = "AABA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "matinee hour; a nickelodeon reel flickers, the accompanist improvises"
+motifs = ["m.tin_pan_turnaround", "m.hook"]
+carries = ["ragtime_form"]
+
+[targets]
+tessitura_hz = [200, 520]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "ring_mod_40hz_ghost"
+texture_preset = "ragtime_stride"
+sample_source = "klatt_texture"
