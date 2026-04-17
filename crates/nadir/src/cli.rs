@@ -417,6 +417,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             use std::process::Command;
             use std::str::FromStr;
 
+            // Kept for compatibility but superseded by FullManifest.
+            #[allow(dead_code)]
             #[derive(Deserialize)]
             struct TrackManifest {
                 track: TrackFields,
@@ -432,9 +434,26 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 #[serde(default = "default_seed")]
                 seed: u64,
             }
+            #[derive(Deserialize, Default)]
+            struct DspFields {
+                #[serde(default)]
+                bed_preset: Option<String>,
+                #[serde(default = "default_bed_gain")]
+                bed_gain: f32,
+                #[serde(default = "default_vocal_gain")]
+                vocal_gain: f32,
+            }
             fn default_bpm() -> f32 { 96.0 }
             fn default_voice() -> String { "us1".into() }
             fn default_seed() -> u64 { 42 }
+            fn default_bed_gain() -> f32 { 0.35 }
+            fn default_vocal_gain() -> f32 { 0.9 }
+            #[derive(Deserialize)]
+            struct FullManifest {
+                track: TrackFields,
+                #[serde(default)]
+                dsp: Option<DspFields>,
+            }
 
             // find track dir
             let track_dir = {
@@ -455,7 +474,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             };
 
             let manifest_text = fs_err::read_to_string(track_dir.join("manifest.toml"))?;
-            let m: TrackManifest = toml::from_str(&manifest_text)?;
+            let m: FullManifest = toml::from_str(&manifest_text)?;
+            let dsp_cfg = m.dsp.unwrap_or(DspFields {
+                bed_preset: None,
+                bed_gain: default_bed_gain(),
+                vocal_gain: default_vocal_gain(),
+            });
             let lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
                 .unwrap_or_default()
                 .lines()
@@ -525,7 +549,6 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
             if realized.is_empty() {
                 fs_err::copy(&raw_vox_path, &tuned_vox_path)?;
-                fs_err::copy(&raw_vox_path, &dest)?;
             } else {
                 {
                     use std::io::Write;
@@ -538,6 +561,30 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 }
                 let script = psola_retarget_script(&raw_vox_path, &f0_target_path, &tuned_vox_path);
                 run_inline(&praat_cfg, &script, &[])?;
+            }
+
+            // ── bed + mix ──
+            let vocal_info = hound::WavReader::open(&tuned_vox_path)?;
+            let dur_s = vocal_info.duration() as f32 / vocal_info.spec().sample_rate as f32;
+            drop(vocal_info);
+
+            let bed_path_opt = stems_dir.join("bed.wav");
+            if let Some(name) = dsp_cfg.bed_preset.as_deref() {
+                if let Some((low, high, tilt)) = nadir_render::resolve_bed_preset(name) {
+                    let bed = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
+                    nadir_render::f32_to_wav_s16(&bed, nadir_render::MASTER_SR, &bed_path_opt)?;
+                    nadir_render::mix_vocal_plus_bed_to_wav(
+                        &tuned_vox_path,
+                        &bed,
+                        dsp_cfg.vocal_gain,
+                        dsp_cfg.bed_gain,
+                        &dest,
+                    )?;
+                } else {
+                    tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
+                    fs_err::copy(&tuned_vox_path, &dest)?;
+                }
+            } else {
                 fs_err::copy(&tuned_vox_path, &dest)?;
             }
 

@@ -73,19 +73,47 @@ impl Graph {
     /// written to `output` (both are filesystem paths). Assumes the csdr build
     /// offers every stage as `csdr <cmd> [args...]`.
     pub fn run_files(&self, input: &Path, output: &Path) -> Result<()> {
+        self.run_files_bounded(Some(input), output, None)
+    }
+
+    /// Generator mode: no input file (/dev/null at stage 0), read up to
+    /// `max_out_bytes` from the last stage. Upstream source stages are killed
+    /// on drop after SIGPIPE.
+    pub fn run_generator(&self, max_out_bytes: usize, output: &Path) -> Result<()> {
+        self.run_files_bounded(None, output, Some(max_out_bytes))
+    }
+
+    /// Core: input is None → /dev/null; max_out_bytes bounds the read.
+    pub fn run_files_bounded(
+        &self,
+        input: Option<&Path>,
+        output: &Path,
+        max_out_bytes: Option<usize>,
+    ) -> Result<()> {
         if self.stages.is_empty() {
             anyhow::bail!("empty graph");
         }
         tracing::info!(pipeline = %self.to_shell(), "csdr run");
-        let in_file = fs_err::File::open(input).with_context(|| format!("open {input:?}"))?;
+
+        let in_stdio: Stdio = match input {
+            Some(p) => {
+                let f = fs_err::File::open(p).with_context(|| format!("open {p:?}"))?;
+                Stdio::from(f.into_parts().0)
+            }
+            None => {
+                let dn = fs_err::File::open("/dev/null").context("open /dev/null")?;
+                Stdio::from(dn.into_parts().0)
+            }
+        };
 
         let mut children: Vec<Child> = Vec::with_capacity(self.stages.len());
         let mut prev_stdout: Option<std::process::ChildStdout> = None;
+        let mut in_stdio_opt = Some(in_stdio);
         for (i, stage) in self.stages.iter().enumerate() {
             let mut cmd = Command::new(&self.bin);
             cmd.arg(&stage.cmd).args(&stage.args);
             cmd.stdin(if i == 0 {
-                Stdio::from(in_file.try_clone()?.into_parts().0)
+                in_stdio_opt.take().unwrap()
             } else {
                 Stdio::from(prev_stdout.take().expect("prev stdout"))
             });
@@ -101,22 +129,39 @@ impl Graph {
         let mut last_stdout = prev_stdout.expect("no last stdout");
         let mut out_file = fs_err::File::create(output)?;
         let mut buf = [0u8; 65536];
+        let mut total = 0usize;
         loop {
-            let n = last_stdout.read(&mut buf)?;
+            let want = match max_out_bytes {
+                Some(m) if total >= m => break,
+                Some(m) => (m - total).min(buf.len()),
+                None => buf.len(),
+            };
+            let n = last_stdout.read(&mut buf[..want])?;
             if n == 0 {
                 break;
             }
             out_file.write_all(&buf[..n])?;
+            total += n;
         }
 
-        for (i, mut c) in children.into_iter().enumerate() {
-            let status = c.wait()?;
-            if !status.success() {
-                let mut err = String::new();
-                if let Some(mut se) = c.stderr {
-                    let _ = se.read_to_string(&mut err);
+        if max_out_bytes.is_some() {
+            // Hit cap → kill remaining upstream children so they don't block on SIGPIPE.
+            for c in children.iter_mut() {
+                let _ = c.kill();
+            }
+            for mut c in children {
+                let _ = c.wait();
+            }
+        } else {
+            for (i, mut c) in children.into_iter().enumerate() {
+                let status = c.wait()?;
+                if !status.success() {
+                    let mut err = String::new();
+                    if let Some(mut se) = c.stderr {
+                        let _ = se.read_to_string(&mut err);
+                    }
+                    anyhow::bail!("csdr stage {} failed ({}): {}", i, status, err);
                 }
-                anyhow::bail!("csdr stage {} failed ({}): {}", i, status, err);
             }
         }
         Ok(())
