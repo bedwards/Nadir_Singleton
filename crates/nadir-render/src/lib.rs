@@ -509,19 +509,39 @@ pub fn mix_stems_stereo_with_echo(
     echo_taps: &[(u32, f32)],
     out_wav: &Path,
 ) -> Result<PathBuf> {
-    let mut vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
-    if !echo_taps.is_empty() {
-        vocal_48k = multi_tap_delay(&vocal_48k, MASTER_SR, echo_taps);
-    }
-    let mut n = vocal_48k.len();
+    let vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
+    // Stereo echo: alternate taps L/R so reflections ping-pong. Index 0 → L,
+    // 1 → R, 2 → L, etc. Direct signal (tap 0 position is always present in
+    // both via multi_tap_delay's initial copy) stays centered.
+    let (vocal_l, vocal_r): (Vec<f32>, Vec<f32>) = if echo_taps.is_empty() {
+        (vocal_48k.clone(), vocal_48k.clone())
+    } else {
+        let taps_l: Vec<(u32, f32)> = echo_taps
+            .iter()
+            .enumerate()
+            .filter_map(|(i, t)| if i % 2 == 0 { Some(*t) } else { None })
+            .collect();
+        let taps_r: Vec<(u32, f32)> = echo_taps
+            .iter()
+            .enumerate()
+            .filter_map(|(i, t)| if i % 2 == 1 { Some(*t) } else { None })
+            .collect();
+        (
+            multi_tap_delay(&vocal_48k, MASTER_SR, &taps_l),
+            multi_tap_delay(&vocal_48k, MASTER_SR, &taps_r),
+        )
+    };
+    let mut n = vocal_l.len().max(vocal_r.len());
     for (s, _, _) in stems {
         n = n.max(s.len());
     }
     let mut left = vec![0.0f32; n];
     let mut right = vec![0.0f32; n];
     let (vl, vr) = pan_gains(vocal_pan);
-    for (i, v) in vocal_48k.iter().enumerate() {
+    for (i, v) in vocal_l.iter().enumerate() {
         left[i] += vocal_gain * vl * v;
+    }
+    for (i, v) in vocal_r.iter().enumerate() {
         right[i] += vocal_gain * vr * v;
     }
     for (stem, g, pan) in stems {
