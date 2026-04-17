@@ -79,6 +79,34 @@ pub fn f32_to_wav_s16(samples: &[f32], sr: u32, out: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Write stereo (L, R) f32 samples as 16-bit PCM WAV at `sr`.
+/// Both slices must have the same length.
+pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Result<()> {
+    anyhow::ensure!(left.len() == right.len(), "stereo channels differ in length");
+    let spec = hound::WavSpec {
+        channels: 2,
+        sample_rate: sr,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut w = hound::WavWriter::create(out, spec)?;
+    for (l, r) in left.iter().zip(right.iter()) {
+        let lv = (l.clamp(-1.0, 1.0) * 32767.0) as i16;
+        let rv = (r.clamp(-1.0, 1.0) * 32767.0) as i16;
+        w.write_sample(lv)?;
+        w.write_sample(rv)?;
+    }
+    w.finalize()?;
+    Ok(())
+}
+
+/// Equal-power pan gains. `pan` in [-1.0, 1.0]: -1 = full L, 0 = center, 1 = full R.
+pub fn pan_gains(pan: f32) -> (f32, f32) {
+    let p = pan.clamp(-1.0, 1.0);
+    let theta = (p + 1.0) * std::f32::consts::FRAC_PI_4;
+    (theta.cos(), theta.sin())
+}
+
 /// Write raw f32 little-endian bytes (for csdr input).
 pub fn f32_to_raw(samples: &[f32], out: &Path) -> Result<()> {
     let mut f = fs_err::File::create(out)?;
@@ -290,25 +318,46 @@ pub fn mix_stems_to_wav(
     vocal_gain: f32,
     out_wav: &Path,
 ) -> Result<PathBuf> {
+    // Mono implementation preserved as shim: promotes every stem to center pan.
+    let stems_panned: Vec<(&[f32], f32, f32)> = stems.iter().map(|(s, g)| (*s, *g, 0.0)).collect();
+    mix_stems_stereo(vocal_wav_16k, &stems_panned, vocal_gain, 0.0, out_wav)
+}
+
+/// Stereo stem mixer. Vocal is upsampled via csdr and panned at `vocal_pan`.
+/// Each `(stem, gain, pan)` is panned with equal-power law. Master bus AGC+limit
+/// is applied independently per channel before WAV write.
+pub fn mix_stems_stereo(
+    vocal_wav_16k: &Path,
+    stems: &[(&[f32], f32, f32)],
+    vocal_gain: f32,
+    vocal_pan: f32,
+    out_wav: &Path,
+) -> Result<PathBuf> {
     let vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
     let mut n = vocal_48k.len();
-    for (s, _) in stems {
+    for (s, _, _) in stems {
         n = n.max(s.len());
     }
-    let mut mixed = vec![0.0f32; n];
+    let mut left = vec![0.0f32; n];
+    let mut right = vec![0.0f32; n];
+    let (vl, vr) = pan_gains(vocal_pan);
     for (i, v) in vocal_48k.iter().enumerate() {
-        mixed[i] += vocal_gain * v;
+        left[i] += vocal_gain * vl * v;
+        right[i] += vocal_gain * vr * v;
     }
-    for (stem, g) in stems {
+    for (stem, g, pan) in stems {
+        let (pl, pr) = pan_gains(*pan);
         for (i, v) in stem.iter().enumerate() {
             if i >= n {
                 break;
             }
-            mixed[i] += g * v;
+            left[i] += g * pl * v;
+            right[i] += g * pr * v;
         }
     }
-    let finalized = master_agc_limit(&mixed).unwrap_or(mixed);
-    f32_to_wav_s16(&finalized, MASTER_SR, out_wav)?;
+    let l_final = master_agc_limit(&left).unwrap_or(left);
+    let r_final = master_agc_limit(&right).unwrap_or(right);
+    stereo_to_wav_s16(&l_final, &r_final, MASTER_SR, out_wav)?;
     Ok(out_wav.to_path_buf())
 }
 
