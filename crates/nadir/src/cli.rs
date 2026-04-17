@@ -579,6 +579,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 bed_pan: f32,
                 #[serde(default = "default_pulse_pan")]
                 pulse_pan: f32,
+                #[serde(default = "default_pulse_pingpong")]
+                pulse_pingpong: bool,
+                #[serde(default = "default_pulse_pingpong_width")]
+                pulse_pingpong_width: f32,
                 #[serde(default)]
                 secondary_voices: Vec<SecondaryVoice>,
             }
@@ -594,6 +598,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse_kind() -> String { "noise".into() }
             fn default_bed_pan() -> f32 { 0.0 }
             fn default_pulse_pan() -> f32 { 0.0 }
+            fn default_pulse_pingpong() -> bool { true }
+            fn default_pulse_pingpong_width() -> f32 { 0.55 }
             #[derive(Deserialize, Default)]
             struct TargetsFields {
                 #[serde(default)]
@@ -645,6 +651,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 vocal_pan: 0.0,
                 bed_pan: default_bed_pan(),
                 pulse_pan: default_pulse_pan(),
+                pulse_pingpong: default_pulse_pingpong(),
+                pulse_pingpong_width: default_pulse_pingpong_width(),
                 secondary_voices: Vec::new(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
@@ -845,46 +853,60 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 None
             };
 
-            let pulses = if dsp_cfg.pulses {
+            // Returns Vec<(samples, pan)> — one entry if pingpong off, two if on.
+            let pulse_stems: Vec<(Vec<f32>, f32)> = if dsp_cfg.pulses {
                 use nadir_vad::{detect_onsets, VadConfig};
                 let vad_cfg = VadConfig::default();
                 match detect_onsets(&vad_cfg, &tuned_vox_path, Some(m.track.bpm)) {
                     Ok(onsets) => {
                         let times: Vec<f32> = onsets.iter().map(|o| o.time_s).collect();
-                        let raw = match dsp_cfg.pulse_kind.as_str() {
-                            "tonic" => {
-                                // Tonic frequency at octave -2 (bassy)
-                                let tonic = sc.degrees_hz(-2).first().copied().unwrap_or(55.0);
-                                nadir_render::pulse_track_pitched(&times, dur_s, dsp_cfg.pulse_ms.max(60), tonic)
-                            }
-                            "noise" | _ => {
-                                nadir_render::pulse_track(&times, dur_s, dsp_cfg.pulse_ms, m.track.seed)
-                            }
+                        let build = |ts: &[f32]| -> Vec<f32> {
+                            let raw = match dsp_cfg.pulse_kind.as_str() {
+                                "tonic" => {
+                                    let tonic = sc.degrees_hz(-2).first().copied().unwrap_or(55.0);
+                                    nadir_render::pulse_track_pitched(ts, dur_s, dsp_cfg.pulse_ms.max(60), tonic)
+                                }
+                                _ => nadir_render::pulse_track(ts, dur_s, dsp_cfg.pulse_ms, m.track.seed),
+                            };
+                            let (low, high) = match dsp_cfg.pulse_kind.as_str() {
+                                "tonic" => (40.0 / nadir_render::MASTER_SR as f32, 500.0 / nadir_render::MASTER_SR as f32),
+                                _ => (200.0 / nadir_render::MASTER_SR as f32, 2000.0 / nadir_render::MASTER_SR as f32),
+                            };
+                            nadir_render::band_limit_via_csdr(&raw, low, high, 0.01).unwrap_or(raw)
                         };
-                        let (low, high) = match dsp_cfg.pulse_kind.as_str() {
-                            "tonic" => (40.0 / nadir_render::MASTER_SR as f32, 500.0 / nadir_render::MASTER_SR as f32),
-                            _ => (200.0 / nadir_render::MASTER_SR as f32, 2000.0 / nadir_render::MASTER_SR as f32),
-                        };
-                        let shaped = nadir_render::band_limit_via_csdr(&raw, low, high, 0.01)
-                            .unwrap_or(raw);
-                        nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &pulses_path)?;
-                        Some(shaped)
+                        if dsp_cfg.pulse_pingpong && times.len() >= 2 {
+                            let (even, odd) = nadir_render::split_onsets_even_odd(&times);
+                            let left = build(&even);
+                            let right = build(&odd);
+                            // Persist a mixed-down stem for stems/pulses.wav
+                            let n = left.len().max(right.len());
+                            let mut mono = vec![0.0f32; n];
+                            for (i, v) in left.iter().enumerate() { mono[i] += 0.5 * v; }
+                            for (i, v) in right.iter().enumerate() { mono[i] += 0.5 * v; }
+                            nadir_render::f32_to_wav_s16(&mono, nadir_render::MASTER_SR, &pulses_path)?;
+                            let w = dsp_cfg.pulse_pingpong_width;
+                            vec![(left, -w), (right, w)]
+                        } else {
+                            let shaped = build(&times);
+                            nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &pulses_path)?;
+                            vec![(shaped, dsp_cfg.pulse_pan)]
+                        }
                     }
                     Err(e) => {
                         tracing::warn!(error=%e, "vad onsets failed, skipping pulses");
-                        None
+                        Vec::new()
                     }
                 }
             } else {
-                None
+                Vec::new()
             };
 
             let mut stems: Vec<(&[f32], f32, f32)> = Vec::new(); // (samples, gain, pan)
             if let Some(ref b) = bed {
                 stems.push((b.as_slice(), dsp_cfg.bed_gain, dsp_cfg.bed_pan));
             }
-            if let Some(ref p) = pulses {
-                stems.push((p.as_slice(), dsp_cfg.pulse_gain, dsp_cfg.pulse_pan));
+            for (samples, pan) in &pulse_stems {
+                stems.push((samples.as_slice(), dsp_cfg.pulse_gain, *pan));
             }
             for (samples, gain, pan) in &secondary_stems {
                 stems.push((samples.as_slice(), *gain, *pan));

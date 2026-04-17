@@ -236,6 +236,17 @@ pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) 
     out
 }
 
+/// Split `onsets_s` into even-indexed / odd-indexed subsequences.
+/// Used to ping-pong a pulse track between L and R.
+pub fn split_onsets_even_odd(onsets_s: &[f32]) -> (Vec<f32>, Vec<f32>) {
+    let mut even = Vec::new();
+    let mut odd = Vec::new();
+    for (i, &t) in onsets_s.iter().enumerate() {
+        if i % 2 == 0 { even.push(t); } else { odd.push(t); }
+    }
+    (even, odd)
+}
+
 /// Synthesize a pitched pulse track (sinusoid bursts) at `onsets_s`.
 /// Each pulse is a fast-decaying sine at `hz` with pulse_ms envelope —
 /// a kick-like tonal percussion. Used when `pulse_kind = "tonic"`.
