@@ -85,6 +85,8 @@ pub enum AlbumSub {
     },
     /// Play every rendered track in an album in order.
     Play { slug: String },
+    /// Show a table of audit rms_cents per track (reads stems/audit.json).
+    Audit { slug: String },
 }
 
 // ─────────── song ───────────
@@ -510,6 +512,65 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             for (i, (n, path)) in tracks.iter().enumerate() {
                 println!("▸ [{}/{total}] track {n}: {}", i + 1, path.display());
                 dispatch_play(path)?;
+            }
+            Ok(())
+        }
+        AlbumSub::Audit { slug } => {
+            let album_dir = std::path::Path::new("albums").join(&slug);
+            let mut rows: Vec<(u8, String, Option<serde_json::Value>)> = Vec::new();
+            for entry in fs_err::read_dir(&album_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+                let name = entry.file_name();
+                let name = name.to_string_lossy().into_owned();
+                let Some((num_str, slug_tail)) = name.split_once('_') else {
+                    continue;
+                };
+                let Ok(n) = num_str.parse::<u8>() else {
+                    continue;
+                };
+                let audit_path = path.join("stems/audit.json");
+                let audit = fs_err::read_to_string(&audit_path)
+                    .ok()
+                    .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
+                rows.push((n, slug_tail.to_string(), audit));
+            }
+            rows.sort_by_key(|(n, _, _)| *n);
+            println!(
+                "{:<3}  {:<30}  {:>9}  {:>9}  {:>7}",
+                "#", "slug", "rms_cents", "ceiling", "passed"
+            );
+            for (n, slug_tail, audit) in &rows {
+                match audit {
+                    Some(a) => {
+                        let rms = a
+                            .get("rms_cents")
+                            .and_then(|x| x.as_f64())
+                            .unwrap_or(f64::NAN);
+                        let ceil = a
+                            .get("ceiling_cents")
+                            .and_then(|x| x.as_f64())
+                            .unwrap_or(f64::NAN);
+                        let passed = a.get("passed").and_then(|x| x.as_bool()).unwrap_or(false);
+                        println!(
+                            "{:02}   {:<30}  {:>9.1}  {:>9.1}  {:>7}",
+                            n,
+                            slug_tail,
+                            rms,
+                            ceil,
+                            if passed { "yes" } else { "NO" }
+                        );
+                    }
+                    None => {
+                        println!(
+                            "{:02}   {:<30}  {:>9}  {:>9}  {:>7}",
+                            n, slug_tail, "—", "—", "—"
+                        );
+                    }
+                }
             }
             Ok(())
         }
