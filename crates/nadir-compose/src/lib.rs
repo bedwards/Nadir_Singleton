@@ -156,15 +156,22 @@ pub fn render_vox_pho_phrased(
                     PitchPoint { pct: 90, hz: end_hz },
                 ];
                 if enable_vib && is_last {
-                    // 25 cents = factor of 2^(25/1200) ≈ 1.01449
+                    // Target ~5 Hz vibrato rate. dur ms → number of cycles.
                     let depth = 2f32.powf(25.0 / 1200.0);
-                    pitch = vec![
-                        PitchPoint { pct: 10, hz: start_hz },
-                        PitchPoint { pct: 30, hz: end_hz * depth },
-                        PitchPoint { pct: 50, hz: end_hz / depth },
-                        PitchPoint { pct: 70, hz: end_hz * depth },
-                        PitchPoint { pct: 90, hz: end_hz },
-                    ];
+                    let cycles = (dur as f32 * 0.005).round().max(1.0) as u32; // 5 Hz
+                    // Each cycle produces 2 extra points (up, down). Span 20%..80% of phoneme.
+                    let mut pts = vec![PitchPoint { pct: 10, hz: start_hz }];
+                    let total_pts = (cycles * 2) as i32;
+                    for i in 0..total_pts {
+                        let pct = 20 + (i as u32 + 1) * 60 / (total_pts as u32 + 1);
+                        let up = i % 2 == 0;
+                        pts.push(PitchPoint {
+                            pct: pct as u8,
+                            hz: if up { end_hz * depth } else { end_hz / depth },
+                        });
+                    }
+                    pts.push(PitchPoint { pct: 90, hz: end_hz });
+                    pitch = pts;
                 }
                 stream.push(Pho {
                     sampa: p.clone(),
