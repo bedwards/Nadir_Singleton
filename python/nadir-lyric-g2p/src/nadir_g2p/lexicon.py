@@ -112,10 +112,29 @@ def _fallback_spell_out(word: str, voice: str) -> list[str]:
 
 
 def phonemize_lyric(lyric: str, voice: str = "us1") -> list[list[str]]:
-    """Phonemize each whitespace-separated word → list of SAMPA phoneme lists.
-
-    We expand common English contractions (``don't`` → ``do not``) before
-    lookup so MBROLA receives discrete word boundaries.
-    """
+    """Phonemize each whitespace-separated word → list of SAMPA phoneme lists."""
     expanded = expand_contractions(lyric)
     return [phonemize_word(w, voice=voice) for w in expanded.split() if w.strip()]
+
+
+def phonemize_lyric_with_stress(
+    lyric: str, voice: str = "us1"
+) -> list[dict]:
+    """Return per-word dicts with phonemes and word-level stress weight.
+
+    Output: [{"phonemes": [str, ...], "stress": float}, ...]
+    stress is the max duration_multiplier for any vowel in the word:
+    1.2 = primary stress, 1.05 = secondary, 0.85 = fully unstressed, 1.0 = consonant-only.
+    """
+    expanded = expand_contractions(lyric)
+    result = []
+    for w in expanded.split():
+        w = w.strip()
+        if not w:
+            continue
+        pairs = phonemize_word_with_stress(w, voice=voice)
+        phonemes = [p for p, _ in pairs]
+        mults = [m for _, m in pairs]
+        stress = max(mults, default=1.0)
+        result.append({"phonemes": phonemes, "stress": stress})
+    return result
