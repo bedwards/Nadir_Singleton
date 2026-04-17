@@ -457,11 +457,18 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse() -> bool { true }
             fn default_pulse_gain() -> f32 { 0.45 }
             fn default_pulse_ms() -> u32 { 25 }
+            #[derive(Deserialize, Default)]
+            struct TargetsFields {
+                #[serde(default)]
+                pitch_error_ceiling_cents: Option<f32>,
+            }
             #[derive(Deserialize)]
             struct FullManifest {
                 track: TrackFields,
                 #[serde(default)]
                 dsp: Option<DspFields>,
+                #[serde(default)]
+                targets: Option<TargetsFields>,
             }
 
             // find track dir
@@ -638,6 +645,22 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 )?;
             }
 
+            // ── openSMILE audit ──
+            let audit_result = run_pitch_audit(
+                &tuned_vox_path,
+                &f0_target_path,
+                &stems_dir,
+                m.targets.as_ref().and_then(|t| t.pitch_error_ceiling_cents),
+            );
+            match audit_result {
+                Ok(rms) => {
+                    println!("audit: {rms:.1} cents rms");
+                }
+                Err(e) => {
+                    tracing::warn!(error=%e, "openSMILE audit failed (non-fatal)");
+                }
+            }
+
             println!("{}", dest.display());
             println!("stems: {}", stems_dir.display());
             Ok(())
@@ -647,6 +670,64 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             Ok(())
         }
     }
+}
+
+fn run_pitch_audit(
+    tuned_vox: &std::path::Path,
+    f0_target_csv: &std::path::Path,
+    stems_dir: &std::path::Path,
+    ceiling_cents: Option<f32>,
+) -> Result<f32> {
+    use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents, SmileConfig};
+
+    let smile_cfg = SmileConfig::default();
+    let smile_csv = stems_dir.join("opensmile_f0.csv");
+    extract_f0_lld(&smile_cfg, tuned_vox, &smile_csv)?;
+    let smile_text = fs_err::read_to_string(&smile_csv)?;
+    let realized: Vec<(f32, f32)> = parse_f0_track(&smile_text)
+        .into_iter()
+        .filter(|(_, hz)| *hz > 0.0)
+        .collect();
+    let target_text = fs_err::read_to_string(f0_target_csv)?;
+    let target: Vec<(f32, f32)> = target_text.lines().skip(1)
+        .filter_map(|l| {
+            let mut it = l.split(',');
+            let t: f32 = it.next()?.parse().ok()?;
+            let h: f32 = it.next()?.parse().ok()?;
+            Some((t, h))
+        })
+        .collect();
+
+    // Align realized frames to nearest target frame by time.
+    let mut realized_aligned = Vec::with_capacity(realized.len());
+    let mut target_aligned = Vec::with_capacity(realized.len());
+    for (t, r) in &realized {
+        if let Some((_, tg)) = target.iter().min_by(|a, b| {
+            (a.0 - *t).abs().partial_cmp(&(b.0 - *t).abs()).unwrap()
+        }) {
+            realized_aligned.push((*t, *r));
+            target_aligned.push((*t, *tg));
+        }
+    }
+
+    let rms = rms_cents(&realized_aligned, &target_aligned);
+    let ceiling = ceiling_cents.unwrap_or(30.0);
+    let passed = rms <= ceiling;
+    let report = serde_json::json!({
+        "rms_cents": rms,
+        "ceiling_cents": ceiling,
+        "passed": passed,
+        "n_realized_frames": realized.len(),
+        "n_target_frames": target.len(),
+    });
+    fs_err::write(
+        stems_dir.join("audit.json"),
+        serde_json::to_string_pretty(&report)?,
+    )?;
+    if !passed {
+        tracing::warn!(rms_cents = rms, ceiling_cents = ceiling, "pitch audit above ceiling");
+    }
+    Ok(rms)
 }
 
 fn dispatch_vox(c: VoxCmd) -> Result<()> {
