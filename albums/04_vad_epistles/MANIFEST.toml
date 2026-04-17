@@ -6,7 +6,7 @@ planned_tracks = 14
 
 [narrative]
 palette = "letter-form tracks"
-arc = "fourteen letters; each ends in calibrated silence announcing the next."
+arc = "fourteen letters we write and send; each closes on silence calibrated to announce the next."
 
 [corpus]
-motifs = []
+motifs = ["m.letter_cadence"]

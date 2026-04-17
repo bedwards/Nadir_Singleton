@@ -1,0 +1,30 @@
+[track]
+n = 8
+slug = "08_to_the_room_without_us"
+title = "To the Room Without Us"
+key = "B"
+scale = "minor"
+bpm = 54
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "a letter to an empty room; absence as addressee"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [150, 360]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 2400

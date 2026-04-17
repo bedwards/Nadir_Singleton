@@ -1,0 +1,30 @@
+[track]
+n = 6
+slug = "06_to_the_morning_we_first_woke"
+title = "To the Morning We First Woke"
+key = "A"
+scale = "minor"
+bpm = 60
+meter = [4, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a letter back to the dawn of album 01"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice", "dawn-echo"]
+
+[targets]
+tessitura_hz = [160, 400]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 1800

@@ -1,0 +1,30 @@
+[track]
+n = 5
+slug = "05_to_the_engineer_of_diphones"
+title = "To the Engineer of Diphones"
+key = "C"
+scale = "major"
+bpm = 66
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a letter to the builder of the first diphone database"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice"]
+
+[targets]
+tessitura_hz = [150, 390]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "deemphasis_chain"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 1500

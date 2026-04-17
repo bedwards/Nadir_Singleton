@@ -1,0 +1,30 @@
+[track]
+n = 14
+slug = "14_to_whom_it_may_concern"
+title = "To Whom It May Concern"
+key = "C"
+scale = "major"
+bpm = 64
+meter = [4, 4]
+bars = 22
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the final letter; to everyone and no one"
+motifs = ["m.letter_cadence"]
+carries = ["epistolary-voice", "closing-address"]
+
+[targets]
+tessitura_hz = [150, 400]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "letter_envelope"
+sample_source = "klatt_texture"
+
+[vad]
+onset_threshold = 0.35
+final_silence_ms = 3400
