@@ -140,6 +140,48 @@ pub fn bed_shaped_noise(duration_s: f32, low: f32, high: f32, tilt: f32) -> Resu
     Ok(samples)
 }
 
+/// Synthesize a tonic-triad drone bed: sum of sinusoids at the key's
+/// root / 3rd / 5th at the given octave. Duration in seconds; 48 kHz mono f32.
+/// Applies a linear fade-in / fade-out of `fade_s` seconds. Detune the 3rd and
+/// 5th by ±2 cents each for movement.
+pub fn bed_tonal_triad(
+    scale: &nadir_core::Scale,
+    duration_s: f32,
+    octave: i32,
+    fade_s: f32,
+) -> Vec<f32> {
+    let degrees = scale.degrees_hz(octave);
+    let root = degrees.first().copied().unwrap_or(220.0);
+    let third = degrees.get(2).copied().unwrap_or(root * 2f32.powf(3.0 / 12.0));
+    let fifth = degrees.get(4).copied().unwrap_or(root * 2f32.powf(7.0 / 12.0));
+    let sr = MASTER_SR as f32;
+    let n = (duration_s * sr).ceil() as usize;
+    let mut out = vec![0.0f32; n];
+    // Small cent detune to avoid a sterile sine stack
+    let cents = |hz: f32, c: f32| hz * 2f32.powf(c / 1200.0);
+    let partials: [(f32, f32); 3] = [
+        (root, 0.45),
+        (cents(third, -2.0), 0.30),
+        (cents(fifth, 2.0), 0.30),
+    ];
+    for (f, amp) in partials {
+        let dphi = 2.0 * std::f32::consts::PI * f / sr;
+        let mut phi: f32 = 0.0;
+        for i in 0..n {
+            out[i] += amp * phi.sin();
+            phi += dphi;
+        }
+    }
+    // Fades
+    let fn_samples = (fade_s * sr) as usize;
+    for i in 0..fn_samples.min(n) {
+        let g = i as f32 / fn_samples as f32;
+        out[i] *= g;
+        out[n - 1 - i] *= g;
+    }
+    out
+}
+
 /// Synthesize a pulse track at `onsets_s` (seconds). Each pulse = noise burst of
 /// `pulse_ms` with a cos^2 attack/release envelope at 48 kHz. Used as a
 /// percussive accompaniment driven by vocal onsets.
@@ -238,15 +280,36 @@ pub fn mix_stems_to_wav(
     Ok(out_wav.to_path_buf())
 }
 
-/// Convenience: resolve a `bed_preset` string from a manifest to actual shaped-noise params.
-/// Returns `None` for unrecognized presets (so caller can no-op or warn).
-pub fn resolve_bed_preset(name: &str) -> Option<(f32, f32, f32)> {
-    // (low_norm, high_norm, tilt_s)
+/// Bed shape: noise-based presets produce shaped noise; tonal presets draw
+/// from key/scale. A manifest may name either — this enum lets callers decide.
+pub enum BedKind {
+    ShapedNoise { low: f32, high: f32, tilt: f32 },
+    TonalTriad { octave: i32, fade_s: f32 },
+}
+
+/// Convenience: resolve a `bed_preset` string from a manifest to a BedKind.
+/// Returns `None` for unrecognized presets.
+pub fn resolve_bed(name: &str) -> Option<BedKind> {
     match name {
-        "shaped_noise_dawn" => Some((-0.04, 0.04, 120e-6)),
-        "shaped_noise_dusk" => Some((-0.08, 0.08, 200e-6)),
-        "shaped_noise_air" => Some((-0.25, 0.25, 30e-6)),
-        "band_limit_80_3200" => Some((80.0 / MASTER_SR as f32, 3200.0 / MASTER_SR as f32, 80e-6)),
+        "shaped_noise_dawn" => Some(BedKind::ShapedNoise { low: -0.04, high: 0.04, tilt: 120e-6 }),
+        "shaped_noise_dusk" => Some(BedKind::ShapedNoise { low: -0.08, high: 0.08, tilt: 200e-6 }),
+        "shaped_noise_air" => Some(BedKind::ShapedNoise { low: -0.25, high: 0.25, tilt: 30e-6 }),
+        "band_limit_80_3200" => Some(BedKind::ShapedNoise {
+            low: 80.0 / MASTER_SR as f32,
+            high: 3200.0 / MASTER_SR as f32,
+            tilt: 80e-6,
+        }),
+        "tonal_drone_triad" => Some(BedKind::TonalTriad { octave: -1, fade_s: 0.8 }),
+        "tonal_drone_low" => Some(BedKind::TonalTriad { octave: -2, fade_s: 1.2 }),
+        "tonal_drone_high" => Some(BedKind::TonalTriad { octave: 0, fade_s: 0.5 }),
+        _ => None,
+    }
+}
+
+/// Back-compat: noise-only shim for call sites that only support shaped noise.
+pub fn resolve_bed_preset(name: &str) -> Option<(f32, f32, f32)> {
+    match resolve_bed(name)? {
+        BedKind::ShapedNoise { low, high, tilt } => Some((low, high, tilt)),
         _ => None,
     }
 }
