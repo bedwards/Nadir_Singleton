@@ -249,11 +249,19 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-16:10:06→16:11:34  feat(compose): tessitura clamp from manifest targets
+16:10:06→16:11:34  PR#99 feat(compose): tessitura clamp from manifest targets
   estimate: 1.0 min    actual: 1.47 min    delta: +0.47
   user-observable: melodies stay in comfortable voice range; track 05
   first_question audit drops 17.3¢ → 5.1¢ because notes no longer drift
   to extremes of the scale
+```
+
+```
+16:19:23→16:20:38  feat(cli): render files named <NN_slug>.wav, not render.wav
+  estimate: 1.0 min    actual: 1.25 min    delta: +0.25
+  user-observable: albums/01_horizon_salts/01_first_salt/01_first_salt.wav
+  (systematic per track). Legacy render.wav still read as fallback so older
+  renders keep working.
 ```
 
 ## rules of thumb (v0.1)

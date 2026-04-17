@@ -498,14 +498,26 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             for entry in fs_err::read_dir(&album_dir)? {
                 let entry = entry?;
                 let path = entry.path();
-                let render = path.join("render.wav");
-                if render.exists() {
-                    if let Some((num, _)) = entry.file_name().to_string_lossy().split_once('_') {
-                        if let Ok(n) = num.parse::<u8>() {
-                            tracks.push((n, render));
-                        }
-                    }
+                if !path.is_dir() {
+                    continue;
                 }
+                let name_owned = entry.file_name();
+                let name = name_owned.to_string_lossy();
+                let Some((num, _)) = name.split_once('_') else {
+                    continue;
+                };
+                let Ok(n) = num.parse::<u8>() else { continue };
+                // Prefer new <NN_slug>.wav naming; fall back to legacy render.wav.
+                let new_render = path.join(format!("{name}.wav"));
+                let legacy = path.join("render.wav");
+                let render = if new_render.exists() {
+                    new_render
+                } else if legacy.exists() {
+                    legacy
+                } else {
+                    continue;
+                };
+                tracks.push((n, render));
             }
             tracks.sort_by_key(|(n, _)| *n);
             let total = tracks.len();
@@ -912,7 +924,11 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 .collect();
 
             let dest = if out.to_str() == Some("out.wav") {
-                track_dir.join("render.wav")
+                let dir_name = track_dir
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("render");
+                track_dir.join(format!("{dir_name}.wav"))
             } else {
                 out.clone()
             };
@@ -1314,7 +1330,13 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 let name = name.to_string_lossy();
                 if let Some((num, _)) = name.split_once('_') {
                     if num.parse::<u8>().ok() == Some(track) {
-                        found = Some(entry.path().join("render.wav"));
+                        let new_render = entry.path().join(format!("{name}.wav"));
+                        let legacy = entry.path().join("render.wav");
+                        found = if new_render.exists() {
+                            Some(new_render)
+                        } else {
+                            Some(legacy)
+                        };
                         break;
                     }
                 }
