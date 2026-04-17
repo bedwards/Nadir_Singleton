@@ -569,6 +569,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_gain: f32,
                 #[serde(default = "default_pulse_ms")]
                 pulse_ms: u32,
+                #[serde(default = "default_pulse_kind")]
+                pulse_kind: String,
                 #[serde(default)]
                 secondary_voices: Vec<SecondaryVoice>,
             }
@@ -581,6 +583,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             fn default_pulse_gain() -> f32 { 0.45 }
             fn default_pulse_ms() -> u32 { 25 }
             fn default_secondary_gain() -> f32 { 0.4 }
+            fn default_pulse_kind() -> String { "noise".into() }
             #[derive(Deserialize, Default)]
             struct TargetsFields {
                 #[serde(default)]
@@ -628,6 +631,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulses: default_pulse(),
                 pulse_gain: default_pulse_gain(),
                 pulse_ms: default_pulse_ms(),
+                pulse_kind: default_pulse_kind(),
                 secondary_voices: Vec::new(),
             });
             if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
@@ -834,10 +838,20 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 match detect_onsets(&vad_cfg, &tuned_vox_path, Some(m.track.bpm)) {
                     Ok(onsets) => {
                         let times: Vec<f32> = onsets.iter().map(|o| o.time_s).collect();
-                        let raw = nadir_render::pulse_track(&times, dur_s, dsp_cfg.pulse_ms, m.track.seed);
-                        // Band-limit around 200-2000 Hz (voice-pocket percussive)
-                        let low = 200.0 / nadir_render::MASTER_SR as f32;
-                        let high = 2000.0 / nadir_render::MASTER_SR as f32;
+                        let raw = match dsp_cfg.pulse_kind.as_str() {
+                            "tonic" => {
+                                // Tonic frequency at octave -2 (bassy)
+                                let tonic = sc.degrees_hz(-2).first().copied().unwrap_or(55.0);
+                                nadir_render::pulse_track_pitched(&times, dur_s, dsp_cfg.pulse_ms.max(60), tonic)
+                            }
+                            "noise" | _ => {
+                                nadir_render::pulse_track(&times, dur_s, dsp_cfg.pulse_ms, m.track.seed)
+                            }
+                        };
+                        let (low, high) = match dsp_cfg.pulse_kind.as_str() {
+                            "tonic" => (40.0 / nadir_render::MASTER_SR as f32, 500.0 / nadir_render::MASTER_SR as f32),
+                            _ => (200.0 / nadir_render::MASTER_SR as f32, 2000.0 / nadir_render::MASTER_SR as f32),
+                        };
                         let shaped = nadir_render::band_limit_via_csdr(&raw, low, high, 0.01)
                             .unwrap_or(raw);
                         nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &pulses_path)?;

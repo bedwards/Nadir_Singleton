@@ -130,9 +130,16 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-09:58:49→09:59:24  fix(compose): vibrato rate stable at ~5 Hz regardless of note length
+09:58:49→09:59:24  PR#66 fix(compose): vibrato rate stable at ~5 Hz regardless of note length
   estimate: 1.0 min    actual: 0.58 min    delta: -0.42
   user-observable: vibrato no longer speeds up on short held notes
+```
+
+```
+10:00:13→10:01:28  feat(render): pitched-pulse option for rhythm track
+  estimate: 1.5 min    actual: 1.25 min    delta: -0.25
+  user-observable: [dsp].pulse_kind = "tonic" replaces noise bursts with
+  fast-decaying sine bursts at the scale tonic (octave -2), giving a kick-drum feel
 ```
 
 ## rules of thumb (v0.1)
