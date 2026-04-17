@@ -28,6 +28,7 @@ pub fn plan_melody(
 /// Phrase-shaped melody. `phrase_lens[i]` is the number of syllables in phrase i
 /// (must sum to syllables.len()). Each phrase gets a deterministic contour
 /// (arc-up, arc-down, ascent, descent, return) chosen from the seed + phrase index.
+/// Equivalent to plan_melody_phrased_in_range with an unbounded tessitura.
 pub fn plan_melody_phrased(
     scale: &Scale,
     syllables: &[String],
@@ -36,6 +37,34 @@ pub fn plan_melody_phrased(
     center_hz: f32,
     bpm: f32,
     stresses: &[f32],
+) -> Vec<Note> {
+    plan_melody_phrased_in_range(
+        scale,
+        syllables,
+        phrase_lens,
+        seed,
+        center_hz,
+        bpm,
+        stresses,
+        None,
+    )
+}
+
+/// Phrase-shaped melody with an optional tessitura clamp (low, high) in Hz:
+/// any note whose computed pitch falls outside [low, high] is transposed by
+/// whole octaves until it lands inside the range. Prevents the voice from
+/// drifting into uncomfortable or inaudible registers when the contour +
+/// jitter combine to push a degree out of the voice's sweet spot.
+#[allow(clippy::too_many_arguments)]
+pub fn plan_melody_phrased_in_range(
+    scale: &Scale,
+    syllables: &[String],
+    phrase_lens: &[usize],
+    seed: u64,
+    center_hz: f32,
+    bpm: f32,
+    stresses: &[f32],
+    tessitura_hz: Option<(f32, f32)>,
 ) -> Vec<Note> {
     let beat_ms = (60000.0 / bpm.max(1.0)) as u32;
     let degrees = scale.degrees_hz(0);
@@ -122,8 +151,17 @@ pub fn plan_melody_phrased(
             } else if plen >= 3 && k == plen - 2 {
                 dur_ms = (dur_ms as f32 * 1.10) as u32;
             }
+            let mut hz = degrees[idx as usize];
+            if let Some((lo, hi)) = tessitura_hz {
+                while hz < lo {
+                    hz *= 2.0;
+                }
+                while hz > hi {
+                    hz *= 0.5;
+                }
+            }
             notes.push(Note {
-                hz: degrees[idx as usize],
+                hz,
                 dur_ms,
                 syllable: syllables[i].clone(),
             });
