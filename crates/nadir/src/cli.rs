@@ -643,6 +643,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 mbrola_voice: String,
                 #[serde(default = "default_seed")]
                 seed: u64,
+                #[serde(default = "default_bars")]
+                bars: u32,
+                #[serde(default = "default_meter")]
+                meter: [u32; 2],
+                #[serde(default)]
+                title: Option<String>,
             }
             #[derive(Deserialize, Default, Clone)]
             struct SecondaryVoice {
@@ -703,6 +709,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             fn default_bpm() -> f32 {
                 96.0
+            }
+            fn default_bars() -> u32 {
+                16
+            }
+            fn default_meter() -> [u32; 2] {
+                [4, 4]
             }
             fn default_voice() -> String {
                 "us1".into()
@@ -1478,6 +1490,57 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     tracing::warn!(error=%e, "openSMILE audit failed (non-fatal)");
                 }
             }
+
+            // ── chord chart: abc + midi (tonic triad held each bar) ──
+            let bars = m.track.bars.max(1);
+            let meter = (m.track.meter[0] as u8, m.track.meter[1] as u8);
+            let ivals = sc.kind.intervals();
+            let root_midi: i32 = 60 + sc.key.semitone(); // middle octave
+            let third_off = ivals.get(2).copied().unwrap_or(4) as i32;
+            let fifth_off = ivals.get(4).copied().unwrap_or(7) as i32;
+            let triad: Vec<u8> = [root_midi, root_midi + third_off, root_midi + fifth_off]
+                .iter()
+                .map(|n| (*n).clamp(0, 127) as u8)
+                .collect();
+            let chord_sym = {
+                let letters = [
+                    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+                ];
+                let letter = letters[(sc.key.semitone().rem_euclid(12)) as usize];
+                // Treat anything not "major" as minor for the rudimentary chord chart.
+                let scale_str = format!("{:?}", sc.kind).to_lowercase();
+                if scale_str.contains("major")
+                    || matches!(
+                        sc.kind,
+                        nadir_core::ScaleKind::PentatonicMajor
+                            | nadir_core::ScaleKind::Major
+                            | nadir_core::ScaleKind::Lydian
+                            | nadir_core::ScaleKind::Mixolydian
+                    )
+                {
+                    letter.to_string()
+                } else {
+                    format!("{letter}m")
+                }
+            };
+            let abc_path = work_dir.join("chords.abc");
+            let midi_path = work_dir.join("chords.mid");
+            let title = m.track.title.clone().unwrap_or_else(|| "untitled".into());
+            let mut abc = String::new();
+            abc.push_str(&format!(
+                "X:1\nT:{title}\nM:{}/{}\nL:1/4\nQ:1/4={}\nK:{chord_sym}\n",
+                meter.0, meter.1, m.track.bpm as u32
+            ));
+            for b in 0..bars {
+                abc.push_str(&format!("|\"{chord_sym}\" z{} ", meter.0));
+                if (b + 1) % 4 == 0 {
+                    abc.push('\n');
+                }
+            }
+            abc.push_str("|]\n");
+            fs_err::write(&abc_path, abc)?;
+            let chords: Vec<Vec<u8>> = (0..bars as usize).map(|_| triad.clone()).collect();
+            nadir_render::write_chord_midi(&midi_path, m.track.bpm, meter, &chords)?;
 
             println!("{}", dest.display());
             println!("stems: {}", stems_dir.display());

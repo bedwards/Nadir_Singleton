@@ -398,6 +398,76 @@ pub fn split_onsets_even_odd(onsets_s: &[f32]) -> (Vec<f32>, Vec<f32>) {
     (even, odd)
 }
 
+/// Write a minimal SMF Type-0 MIDI file with one track: tempo meta + sequence
+/// of held chords (full-bar). Each chord is a Vec<u8> of MIDI note numbers.
+/// `bpm` drives the tempo meta. `meter` = (numerator, denominator) for time
+/// signature; a "bar" = numerator beats. PPQ fixed at 480.
+pub fn write_chord_midi(out: &Path, bpm: f32, meter: (u8, u8), chords: &[Vec<u8>]) -> Result<()> {
+    const PPQ: u16 = 480;
+    let mut track: Vec<u8> = Vec::new();
+
+    // tempo meta: microseconds per quarter = 60e6 / bpm
+    let us_per_q = (60_000_000.0 / bpm.max(1.0)) as u32;
+    track.extend_from_slice(&[0x00, 0xFF, 0x51, 0x03]);
+    track.push((us_per_q >> 16) as u8);
+    track.push((us_per_q >> 8) as u8);
+    track.push(us_per_q as u8);
+
+    // time signature meta: FF 58 04 nn dd cc bb
+    track.extend_from_slice(&[0x00, 0xFF, 0x58, 0x04]);
+    track.push(meter.0);
+    // denominator in MIDI is log2(denom)
+    let dd = (meter.1 as f32).log2().round() as u8;
+    track.push(dd);
+    track.extend_from_slice(&[24, 8]); // metronome clocks / 32nds per quarter
+
+    // Each bar = meter.0 beats = meter.0 * PPQ ticks.
+    let bar_ticks: u32 = u32::from(PPQ) * u32::from(meter.0);
+
+    let write_vlq = |buf: &mut Vec<u8>, mut v: u32| {
+        let mut bytes = [0u8; 5];
+        let mut i = 0;
+        bytes[i] = (v & 0x7F) as u8;
+        v >>= 7;
+        while v > 0 {
+            i += 1;
+            bytes[i] = ((v & 0x7F) as u8) | 0x80;
+            v >>= 7;
+        }
+        // bytes are in reverse order — write from i down to 0
+        for k in (0..=i).rev() {
+            buf.push(bytes[k]);
+        }
+    };
+
+    for chord in chords.iter() {
+        // All notes of this chord fire at the same tick (delta 0 for each).
+        for &n in chord {
+            write_vlq(&mut track, 0);
+            track.extend_from_slice(&[0x90, n, 80]);
+        }
+        // Note-off after the full bar; first off has the bar delay, rest 0.
+        for (ni, &n) in chord.iter().enumerate() {
+            write_vlq(&mut track, if ni == 0 { bar_ticks } else { 0 });
+            track.extend_from_slice(&[0x80, n, 64]);
+        }
+    }
+    // end of track
+    track.extend_from_slice(&[0x00, 0xFF, 0x2F, 0x00]);
+
+    let mut file: Vec<u8> = Vec::new();
+    file.extend_from_slice(b"MThd");
+    file.extend_from_slice(&[0, 0, 0, 6]);
+    file.extend_from_slice(&[0, 0]); // format 0
+    file.extend_from_slice(&[0, 1]); // 1 track
+    file.extend_from_slice(&PPQ.to_be_bytes());
+    file.extend_from_slice(b"MTrk");
+    file.extend_from_slice(&(track.len() as u32).to_be_bytes());
+    file.extend_from_slice(&track);
+    fs_err::write(out, &file)?;
+    Ok(())
+}
+
 /// Beat-grid hit times. `subdivision` = 1 → quarter notes, 2 → 8th, 4 → 16th.
 /// Times start at 0 and continue every `60 / (bpm * subdivision)` s up to
 /// `duration_s`.
