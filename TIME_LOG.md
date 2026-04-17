@@ -143,10 +143,17 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-10:02:23→10:04:17  feat(render): stereo mix + per-voice pan
+10:02:23→10:04:17  PR#68 feat(render): stereo mix + per-voice pan
   estimate: 4.5 min    actual: 1.90 min    delta: -2.60 (huge over-estimate; stereo
   looked scary but was add-a-channel-to-hound + mirror the mix loop + new fields)
   user-observable: renders are stereo WAVs; secondary voices can pan L/R via manifest
+```
+
+```
+10:05:09→10:06:37  feat(render): ping-pong panning for pulse onsets
+  estimate: 1.5 min    actual: 1.47 min    delta: -0.03 (on the money)
+  user-observable: percussive onsets alternate L→R→L→R in stereo — stereo width
+  without having to hand-pan in a manifest
 ```
 
 ## rules of thumb (v0.1)
