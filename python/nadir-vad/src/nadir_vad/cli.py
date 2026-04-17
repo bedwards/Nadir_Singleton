@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from .segmenter import segments, segments_as_json, onsets, onsets_as_json
+from .segmenter import onsets, onsets_as_json, segments, segments_as_json
 
 
 def main(argv: list[str] | None = None) -> int:

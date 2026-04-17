@@ -1,4 +1,4 @@
-from nadir_vad import Segment, Onset
+from nadir_vad import Onset, Segment
 
 
 def test_segment_dataclass():

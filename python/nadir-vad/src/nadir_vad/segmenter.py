@@ -6,9 +6,8 @@ a speech-detection model as a music-timing oracle.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import soundfile as sf
@@ -25,7 +24,7 @@ class Segment:
 class Onset:
     time_s: float
     prob: float
-    beat_index: Optional[int] = None
+    beat_index: int | None = None
 
 
 def _load_mono_16k(wav_path: Path) -> np.ndarray:
@@ -85,7 +84,7 @@ def onsets(
     wav_path: Path,
     *,
     threshold: float = 0.3,
-    bpm: Optional[float] = None,
+    bpm: float | None = None,
 ) -> list[Onset]:
     """Peak-pick where VAD probability rises across `threshold`.
 
