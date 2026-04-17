@@ -1081,9 +1081,32 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 .as_ref()
                 .and_then(|t| t.pulse_loudness_lufs)
                 .unwrap_or(-18.0);
-            // Vocal WAV on disk — normalize in place
+            // Stress → amplitude map (primary slightly louder, unstressed softer)
+            let stress_gain = |stress: f32| -> f32 {
+                if stress >= 1.15 {
+                    1.20
+                } else if stress < 0.9 {
+                    0.72
+                } else {
+                    1.0
+                }
+            };
+            let note_durs: Vec<u32> = notes.iter().map(|n| n.dur_ms).collect();
+
+            // Vocal WAV on disk — apply per-syllable dynamics, then normalize
             {
                 let (mut v, sr) = nadir_render::wav_to_f32(&tuned_vox_path)?;
+                nadir_render::apply_syllable_dynamics(
+                    &mut v,
+                    sr,
+                    &note_durs,
+                    &phrase_lens,
+                    &stresses,
+                    400,
+                    30,
+                    15,
+                    stress_gain,
+                );
                 nadir_render::normalize_to_dbfs(&mut v, vox_target, 18.0);
                 nadir_render::f32_to_wav_s16(&v, sr, &tuned_vox_path)?;
             }

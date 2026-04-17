@@ -103,6 +103,63 @@ pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Re
     Ok(())
 }
 
+/// Apply a per-syllable amplitude envelope in-place. The syllable timing is
+/// reconstructed from `note_dur_ms` (one entry per syllable) plus the breath
+/// and intra-syllable silences that `render_vox_pho_phrased` inserts around
+/// them, so the envelope lines up with the MBROLA-synthesized audio.
+///
+/// `stress_to_gain` is called per syllable to produce the target gain; the
+/// envelope ramps between syllables over `xfade_ms` so there are no clicks.
+#[allow(clippy::too_many_arguments)]
+pub fn apply_syllable_dynamics(
+    samples: &mut [f32],
+    sr: u32,
+    note_dur_ms: &[u32],
+    phrase_lens: &[usize],
+    stresses: &[f32],
+    breath_ms: u32,
+    intra_ms: u32,
+    xfade_ms: u32,
+    stress_to_gain: impl Fn(f32) -> f32,
+) {
+    let ms_to_samples = |ms: u32| -> usize { (ms as f32 * sr as f32 / 1000.0) as usize };
+    let xfade = ms_to_samples(xfade_ms).max(1);
+    // Build a piecewise-constant target gain per sample, then smooth on the fly.
+    let mut target = vec![1.0f32; samples.len()];
+    let mut cursor = ms_to_samples(breath_ms); // opening silence
+    let mut syl_i = 0usize;
+    for (p_idx, &plen) in phrase_lens.iter().enumerate() {
+        for k in 0..plen {
+            if syl_i >= note_dur_ms.len() {
+                break;
+            }
+            let dur_samples = ms_to_samples(note_dur_ms[syl_i]);
+            let stress = stresses.get(syl_i).copied().unwrap_or(1.0);
+            let gain = stress_to_gain(stress);
+            let end = (cursor + dur_samples).min(target.len());
+            for v in target[cursor..end].iter_mut() {
+                *v = gain;
+            }
+            cursor = end;
+            if k + 1 < plen {
+                cursor = (cursor + ms_to_samples(intra_ms)).min(target.len());
+            }
+            syl_i += 1;
+        }
+        // phrase-end breath
+        let _ = p_idx;
+        cursor = (cursor + ms_to_samples(breath_ms)).min(target.len());
+    }
+    // Smooth transitions with a simple one-pole filter
+    let alpha = 1.0 / xfade as f32;
+    let mut env = target[0];
+    for (i, s) in samples.iter_mut().enumerate() {
+        let t = target[i];
+        env += alpha * (t - env);
+        *s *= env;
+    }
+}
+
 /// RMS level in dBFS of the non-silent portion of `samples`.
 /// Samples below `silence_threshold` (default 0.001) are excluded so leading
 /// /trailing quiet doesn't drag the measurement down. This is not true ITU BS.1770
