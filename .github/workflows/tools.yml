@@ -1,0 +1,25 @@
+name: tools-present
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install linux tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y praat build-essential cmake libfftw3-dev libsamplerate0-dev git
+      - name: run bootstrap (partial)
+        run: bash scripts/bootstrap.sh || true
+      - name: verify
+        run: |
+          ls tools/bin || true
+          command -v praat
+          # mbrola, csdr, SMILExtract may come from tools/bin
+          test -x tools/bin/mbrola || command -v mbrola
+          test -x tools/bin/csdr || command -v csdr
+          test -x tools/bin/SMILExtract || command -v SMILExtract

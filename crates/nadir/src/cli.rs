@@ -1,0 +1,663 @@
+//! CLI surface. Clap derive.
+//!
+//! Convention: every subcommand exposes its own `--help`, and any command that
+//! wraps one of the five core tools accepts trailing `--` args that are passed
+//! verbatim to the tool via `#[arg(last = true)]` on a `Vec<String>`.
+
+use anyhow::{Context, Result};
+use clap::{Args, Parser, Subcommand};
+use std::path::PathBuf;
+
+#[derive(Parser, Debug)]
+#[command(
+    name = "nadir",
+    version,
+    about = "Nadir_Singleton: experimental music produced with openSMILE, Praat, MBROLA, Silero-VAD, csdr — only.",
+    long_about = "Nadir_Singleton is the AI composer/producer persona and the production system it runs on.\nVocals are diphone-synthesised (MBROLA), pitch-corrected to key (Praat PSOLA), and audited\nby openSMILE. Rhythm comes from Silero-VAD onsets. DSP is a csdr pipeline chain.\nNo other audio tool is permitted.",
+    propagate_version = true
+)]
+pub struct Cli {
+    /// Increase verbosity (repeat for more).
+    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
+    pub verbose: u8,
+
+    #[command(subcommand)]
+    pub cmd: Cmd,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Cmd {
+    /// Album management (create, list, liner notes).
+    Album(AlbumCmd),
+    /// Song management and rendering.
+    Song(SongCmd),
+    /// MBROLA-driven vocal synthesis.
+    Vox(VoxCmd),
+    /// Praat PSOLA / pitch / formant operations.
+    Pitch(PitchCmd),
+    /// Silero-VAD voice-activity detection and segmentation.
+    Vad(VadCmd),
+    /// csdr DSP pipeline builder and runner.
+    Dsp(DspCmd),
+    /// openSMILE feature extraction.
+    Feat(FeatCmd),
+    /// Cross-album corpus operations (narrative, motifs).
+    Corpus(CorpusCmd),
+    /// Open research notes.
+    Research(ResearchCmd),
+    /// Print versions of all five core tools.
+    Doctor,
+}
+
+// ─────────── album ───────────
+
+#[derive(Args, Debug)]
+pub struct AlbumCmd {
+    #[command(subcommand)]
+    pub sub: AlbumSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum AlbumSub {
+    /// List albums defined in this repo.
+    List,
+    /// Create a new album scaffold.
+    New {
+        /// Slug (e.g. `01_horizon_salts`).
+        slug: String,
+        /// Album title.
+        #[arg(long)]
+        title: String,
+    },
+    /// Show liner notes.
+    Liner { slug: String },
+}
+
+// ─────────── song ───────────
+
+#[derive(Args, Debug)]
+pub struct SongCmd {
+    #[command(subcommand)]
+    pub sub: SongSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SongSub {
+    /// Create a new track manifest under an album.
+    New {
+        #[arg(long)]
+        album: String,
+        #[arg(long)]
+        n: u8,
+        #[arg(long)]
+        title: String,
+    },
+    /// Render a track end-to-end.
+    Render {
+        #[arg(long)]
+        album: String,
+        #[arg(long)]
+        track: u8,
+        #[arg(long, default_value = "out.wav")]
+        out: PathBuf,
+    },
+    /// Audit a rendered track against quality gates.
+    Audit {
+        #[arg(long)]
+        album: String,
+        #[arg(long)]
+        track: u8,
+    },
+}
+
+// ─────────── vox ───────────
+
+#[derive(Args, Debug)]
+pub struct VoxCmd {
+    #[command(subcommand)]
+    pub sub: VoxSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum VoxSub {
+    /// Synthesize a `.pho` file to a WAV with MBROLA.
+    Synth {
+        #[arg(long)]
+        pho: PathBuf,
+        #[arg(long, default_value = "us1")]
+        voice: String,
+        #[arg(long, default_value = "out.wav")]
+        out: PathBuf,
+        /// Everything after `--` is forwarded to mbrola verbatim.
+        #[arg(last = true)]
+        passthrough: Vec<String>,
+    },
+    /// Build a scale-snapped vocal from lyrics.
+    FromLyrics {
+        #[arg(long)]
+        text: String,
+        #[arg(long, default_value = "us1")]
+        voice: String,
+        #[arg(long, default_value = "A")]
+        key: String,
+        #[arg(long, default_value = "minor")]
+        scale: String,
+        #[arg(long, default_value_t = 96.0)]
+        bpm: f32,
+        #[arg(long, default_value_t = 42)]
+        seed: u64,
+        #[arg(long, default_value = "vox.wav")]
+        out: PathBuf,
+    },
+    /// Closed-loop tuning: MBROLA → openSMILE audit → Praat PSOLA retarget.
+    Tune {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long)]
+        key: String,
+        #[arg(long)]
+        scale: String,
+        #[arg(long, default_value_t = 3)]
+        max_passes: u8,
+        #[arg(long, default_value = "tuned.wav")]
+        out: PathBuf,
+    },
+}
+
+// ─────────── pitch (praat) ───────────
+
+#[derive(Args, Debug)]
+pub struct PitchCmd {
+    #[command(subcommand)]
+    pub sub: PitchSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum PitchSub {
+    /// PSOLA retarget an input WAV to a target F0 contour.
+    Psola {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long)]
+        target_csv: PathBuf,
+        #[arg(long, default_value = "out.wav")]
+        out: PathBuf,
+        #[arg(last = true)]
+        passthrough: Vec<String>,
+    },
+    /// Extract a pitch track (ac, cc, or shs).
+    Extract {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long, default_value = "ac")]
+        method: String,
+        #[arg(long, default_value = "pitch.csv")]
+        out: PathBuf,
+    },
+}
+
+// ─────────── vad ───────────
+
+#[derive(Args, Debug)]
+pub struct VadCmd {
+    #[command(subcommand)]
+    pub sub: VadSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum VadSub {
+    /// Detect speech segments in a WAV.
+    Segments {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long, default_value_t = 0.3)]
+        threshold: f32,
+    },
+    /// Split a WAV into segment WAVs.
+    Split {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long, default_value = "segs")]
+        out_dir: PathBuf,
+    },
+    /// Emit an onset grid (JSON) useful as rhythmic triggers.
+    Onsets {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long, default_value_t = 0.3)]
+        threshold: f32,
+    },
+}
+
+// ─────────── dsp (csdr) ───────────
+
+#[derive(Args, Debug)]
+pub struct DspCmd {
+    #[command(subcommand)]
+    pub sub: DspSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DspSub {
+    /// Run a csdr graph (TOML) against an input file.
+    Run {
+        #[arg(long)]
+        graph: PathBuf,
+        #[arg(long)]
+        in_file: PathBuf,
+        #[arg(long, default_value = "out.raw")]
+        out: PathBuf,
+        #[arg(last = true)]
+        passthrough: Vec<String>,
+    },
+    /// Print the pipeline shell string for a graph (dry-run).
+    Show {
+        #[arg(long)]
+        graph: PathBuf,
+    },
+    /// Emit preset graphs (upsample, band-limit, ring-mod) to TOML.
+    Preset {
+        which: String,
+        #[arg(long, default_value = "graph.toml")]
+        out: PathBuf,
+    },
+}
+
+// ─────────── feat (opensmile) ───────────
+
+#[derive(Args, Debug)]
+pub struct FeatCmd {
+    #[command(subcommand)]
+    pub sub: FeatSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum FeatSub {
+    /// Extract features with a named feature set.
+    Extract {
+        #[arg(long, default_value = "eGeMAPSv02")]
+        set: String,
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long, default_value = "features.csv")]
+        out: PathBuf,
+    },
+    /// Audit pitch track (RMS cents error vs a target CSV).
+    Audit {
+        #[arg(long)]
+        in_wav: PathBuf,
+        #[arg(long)]
+        target_csv: PathBuf,
+    },
+}
+
+// ─────────── corpus ───────────
+
+#[derive(Args, Debug)]
+pub struct CorpusCmd {
+    #[command(subcommand)]
+    pub sub: CorpusSub,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CorpusSub {
+    /// Print the narrative arc across albums.
+    Narrative,
+    /// List motifs tracked in CORPUS.md.
+    Motifs,
+}
+
+// ─────────── research ───────────
+
+#[derive(Args, Debug)]
+pub struct ResearchCmd {
+    /// Tool name: opensmile, praat, mbrola, silero, csdr, first_principles_music.
+    pub name: String,
+}
+
+// ─────────── dispatch ───────────
+
+pub fn dispatch(cli: Cli) -> Result<()> {
+    use Cmd::*;
+    match cli.cmd {
+        Album(c) => dispatch_album(c),
+        Song(c) => dispatch_song(c),
+        Vox(c) => dispatch_vox(c),
+        Pitch(c) => dispatch_pitch(c),
+        Vad(c) => dispatch_vad(c),
+        Dsp(c) => dispatch_dsp(c),
+        Feat(c) => dispatch_feat(c),
+        Corpus(c) => dispatch_corpus(c),
+        Research(c) => dispatch_research(c),
+        Doctor => dispatch_doctor(),
+    }
+}
+
+fn dispatch_album(c: AlbumCmd) -> Result<()> {
+    match c.sub {
+        AlbumSub::List => {
+            let albums_dir = std::path::Path::new("albums");
+            if albums_dir.exists() {
+                for entry in fs_err::read_dir(albums_dir)? {
+                    let e = entry?;
+                    if e.path().is_dir() {
+                        println!("{}", e.file_name().to_string_lossy());
+                    }
+                }
+            }
+            Ok(())
+        }
+        AlbumSub::New { slug, title } => {
+            let dir = format!("albums/{slug}");
+            fs_err::create_dir_all(&dir)?;
+            let manifest = format!(
+                "[album]\nslug = \"{slug}\"\ntitle = \"{title}\"\n\n[narrative]\narc = \"TBD\"\n",
+            );
+            fs_err::write(format!("{dir}/MANIFEST.toml"), manifest)?;
+            fs_err::write(
+                format!("{dir}/LINER.md"),
+                format!("# {title}\n\n_draft liner_\n"),
+            )?;
+            println!("created {dir}");
+            Ok(())
+        }
+        AlbumSub::Liner { slug } => {
+            let p = format!("albums/{slug}/LINER.md");
+            let s = fs_err::read_to_string(&p).with_context(|| format!("read {p}"))?;
+            println!("{s}");
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_song(c: SongCmd) -> Result<()> {
+    match c.sub {
+        SongSub::New { album, n, title } => {
+            let dir = format!("albums/{album}/{:02}_{}", n, slugify(&title));
+            fs_err::create_dir_all(format!("{dir}/stems"))?;
+            let manifest = format!(
+                "[track]\nn = {n}\ntitle = \"{title}\"\nkey = \"A\"\nscale = \"minor\"\nbpm = 96\nmeter = [4, 4]\nbars = 16\nform = \"verse/chorus\"\n",
+            );
+            fs_err::write(format!("{dir}/manifest.toml"), manifest)?;
+            fs_err::write(format!("{dir}/lyric.txt"), "")?;
+            fs_err::write(format!("{dir}/NOTES.md"), format!("# {title}\n"))?;
+            println!("created {dir}");
+            Ok(())
+        }
+        SongSub::Render { album, track, out } => {
+            println!(
+                "render stub — album={album} track={track} out={}",
+                out.display()
+            );
+            Ok(())
+        }
+        SongSub::Audit { album, track } => {
+            println!("audit stub — album={album} track={track}");
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_vox(c: VoxCmd) -> Result<()> {
+    use nadir_vox::{synth_to_wav, MbrolaConfig};
+    match c.sub {
+        VoxSub::Synth {
+            pho,
+            voice,
+            out,
+            passthrough: _,
+        } => {
+            let cfg = MbrolaConfig {
+                voice,
+                ..Default::default()
+            };
+            let text = fs_err::read_to_string(&pho)?;
+            let mut stream = nadir_core::PhoStream::new();
+            for line in text.lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() < 2 {
+                    continue;
+                }
+                let sampa = parts[0].to_string();
+                let dur: u32 = parts[1].parse().unwrap_or(100);
+                let mut pitch = Vec::new();
+                let mut i = 2;
+                while i + 1 < parts.len() {
+                    let pct: u8 = parts[i].parse().unwrap_or(50);
+                    let hz: f32 = parts[i + 1].parse().unwrap_or(220.0);
+                    pitch.push(nadir_core::PitchPoint { pct, hz });
+                    i += 2;
+                }
+                stream.push(nadir_core::Pho {
+                    sampa,
+                    dur_ms: dur,
+                    pitch,
+                });
+            }
+            synth_to_wav(&cfg, &stream, &out)?;
+            println!("{}", out.display());
+            Ok(())
+        }
+        VoxSub::FromLyrics {
+            text: _,
+            voice: _,
+            key: _,
+            scale: _,
+            bpm: _,
+            seed: _,
+            out,
+        } => {
+            println!(
+                "from-lyrics stub — wire g2p + compose + synth. target {}",
+                out.display()
+            );
+            Ok(())
+        }
+        VoxSub::Tune {
+            in_wav,
+            key,
+            scale,
+            max_passes,
+            out,
+        } => {
+            println!(
+                "tune stub — in={} key={} scale={} passes={} out={}",
+                in_wav.display(),
+                key,
+                scale,
+                max_passes,
+                out.display()
+            );
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_pitch(c: PitchCmd) -> Result<()> {
+    use nadir_praat::{psola_retarget_script, run_inline, PraatConfig};
+    match c.sub {
+        PitchSub::Psola {
+            in_wav,
+            target_csv,
+            out,
+            passthrough: _,
+        } => {
+            let cfg = PraatConfig::default();
+            let script = psola_retarget_script(&in_wav, &target_csv, &out);
+            let stdout = run_inline(&cfg, &script, &[])?;
+            print!("{stdout}");
+            println!("{}", out.display());
+            Ok(())
+        }
+        PitchSub::Extract {
+            in_wav,
+            method,
+            out,
+        } => {
+            println!(
+                "pitch extract stub — in={} method={} out={}",
+                in_wav.display(),
+                method,
+                out.display()
+            );
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_vad(c: VadCmd) -> Result<()> {
+    use nadir_vad::{detect_segments, VadConfig};
+    match c.sub {
+        VadSub::Segments { in_wav, threshold } => {
+            let cfg = VadConfig {
+                threshold,
+                ..Default::default()
+            };
+            let segs = detect_segments(&cfg, &in_wav)?;
+            println!("{}", serde_json::to_string_pretty(&segs)?);
+            Ok(())
+        }
+        VadSub::Split { in_wav, out_dir } => {
+            println!(
+                "vad split stub — in={} out={}",
+                in_wav.display(),
+                out_dir.display()
+            );
+            Ok(())
+        }
+        VadSub::Onsets {
+            in_wav,
+            threshold: _,
+        } => {
+            println!("vad onsets stub — in={}", in_wav.display());
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_dsp(c: DspCmd) -> Result<()> {
+    use nadir_dsp::{presets, Graph};
+    match c.sub {
+        DspSub::Run {
+            graph,
+            in_file,
+            out,
+            passthrough: _,
+        } => {
+            let text = fs_err::read_to_string(&graph)?;
+            let g = Graph::parse_toml(&text)?;
+            g.run_files(&in_file, &out)?;
+            println!("{}", out.display());
+            Ok(())
+        }
+        DspSub::Show { graph } => {
+            let text = fs_err::read_to_string(&graph)?;
+            let g = Graph::parse_toml(&text)?;
+            println!("{}", g.to_shell());
+            Ok(())
+        }
+        DspSub::Preset { which, out } => {
+            let g = match which.as_str() {
+                "upsample" => presets::upsample_16_to_48("csdr"),
+                "band-limit" => presets::band_limit(0.01, 0.4),
+                "ring-mod" => presets::ring_mod(0.001),
+                other => anyhow::bail!("unknown preset: {other}"),
+            };
+            fs_err::write(&out, g.to_toml()?)?;
+            println!("{}", out.display());
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_feat(c: FeatCmd) -> Result<()> {
+    use nadir_feat::{extract_csv, FeatureSet, SmileConfig};
+    match c.sub {
+        FeatSub::Extract { set, in_wav, out } => {
+            let fs = match set.as_str() {
+                "eGeMAPSv02" => FeatureSet::EGeMAPSv02,
+                "ComParE2016" => FeatureSet::ComParE2016,
+                "GeMAPSv01a" => FeatureSet::GeMAPSv01a,
+                "emobase" => FeatureSet::Emobase,
+                other => anyhow::bail!("unknown feature set: {other}"),
+            };
+            let cfg = SmileConfig::default();
+            extract_csv(&cfg, fs, &in_wav, &out)?;
+            println!("{}", out.display());
+            Ok(())
+        }
+        FeatSub::Audit { in_wav, target_csv } => {
+            println!(
+                "feat audit stub — in={} target={}",
+                in_wav.display(),
+                target_csv.display()
+            );
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_corpus(c: CorpusCmd) -> Result<()> {
+    match c.sub {
+        CorpusSub::Narrative => {
+            let p = "albums/CORPUS.md";
+            if let Ok(s) = fs_err::read_to_string(p) {
+                println!("{s}");
+            } else {
+                println!("(no CORPUS.md yet — run with albums scaffolded)");
+            }
+            Ok(())
+        }
+        CorpusSub::Motifs => {
+            println!("motif tracking is a v0.3 feature");
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_research(c: ResearchCmd) -> Result<()> {
+    let p = format!("research/{}.md", c.name);
+    let s = fs_err::read_to_string(&p).with_context(|| format!("read {p}"))?;
+    println!("{s}");
+    Ok(())
+}
+
+fn dispatch_doctor() -> Result<()> {
+    use std::path::Path;
+    println!("nadir v{}", env!("CARGO_PKG_VERSION"));
+    for (name, bin) in [
+        ("mbrola", "mbrola"),
+        ("praat", "praat"),
+        ("SMILExtract", "SMILExtract"),
+        ("csdr", "csdr"),
+    ] {
+        match std::process::Command::new(bin).arg("--help").output() {
+            Ok(_) => println!("  {name:<12}  found on PATH"),
+            Err(_) => println!("  {name:<12}  MISSING on PATH"),
+        }
+    }
+    let uv_project = Path::new("python/nadir-vad");
+    if uv_project.exists() {
+        println!("  silero-vad    python project present (uv)");
+    } else {
+        println!(
+            "  silero-vad    python project MISSING at {}",
+            uv_project.display()
+        );
+    }
+    Ok(())
+}
+
+fn slugify(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>()
+        .trim_matches('_')
+        .to_string()
+}

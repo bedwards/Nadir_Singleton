@@ -1,0 +1,16 @@
+[package]
+name = "nadir-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared types for Nadir_Singleton: Score, Pho, Pitch, Clip, Stem, Track, Album."
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+camino.workspace = true

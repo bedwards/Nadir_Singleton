@@ -1,0 +1,22 @@
+[package]
+name = "nadir-render"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Top-level render graph: combines vox, beds, textures, features, into a mixed track."
+
+[dependencies]
+nadir-core.workspace = true
+nadir-vox.workspace = true
+nadir-dsp.workspace = true
+nadir-feat.workspace = true
+nadir-praat.workspace = true
+nadir-compose.workspace = true
+nadir-vad.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+toml.workspace = true
+tracing.workspace = true
+fs-err.workspace = true

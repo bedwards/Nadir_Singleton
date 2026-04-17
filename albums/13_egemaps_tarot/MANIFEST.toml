@@ -1,0 +1,12 @@
+[album]
+n = 13
+slug = "13_egemaps_tarot"
+title = "eGeMAPS Tarot"
+planned_tracks = 22
+
+[narrative]
+palette = "22 feature-family archetypes"
+arc = "twenty-two tracks, one per eGeMAPS family archetype; the corpus tarot."
+
+[corpus]
+motifs = []

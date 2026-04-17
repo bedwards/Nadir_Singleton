@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/nadir",
+    "crates/nadir-core",
+    "crates/nadir-vox",
+    "crates/nadir-dsp",
+    "crates/nadir-feat",
+    "crates/nadir-praat",
+    "crates/nadir-compose",
+    "crates/nadir-render",
+    "crates/nadir-vad",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Nadir_Singleton <ns@bedwards.github.io>"]
+license = "MIT"
+repository = "https://github.com/bedwards/Nadir_Singleton"
+rust-version = "1.75"
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+clap = { version = "4", features = ["derive", "env", "wrap_help"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tempfile = "3"
+hound = "3"
+fs-err = "2"
+camino = { version = "1", features = ["serde1"] }
+
+nadir-core = { path = "crates/nadir-core", version = "0.1.0" }
+nadir-vox = { path = "crates/nadir-vox", version = "0.1.0" }
+nadir-dsp = { path = "crates/nadir-dsp", version = "0.1.0" }
+nadir-feat = { path = "crates/nadir-feat", version = "0.1.0" }
+nadir-praat = { path = "crates/nadir-praat", version = "0.1.0" }
+nadir-compose = { path = "crates/nadir-compose", version = "0.1.0" }
+nadir-render = { path = "crates/nadir-render", version = "0.1.0" }
+nadir-vad = { path = "crates/nadir-vad", version = "0.1.0" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+
+[profile.dev]
+opt-level = 1

@@ -1,0 +1,12 @@
+[album]
+n = 18
+slug = "18_dorian_weather"
+title = "Dorian Weather"
+planned_tracks = 16
+
+[narrative]
+palette = "modal pop"
+arc = "pop structures dressed in Dorian, a little rain in every chorus."
+
+[corpus]
+motifs = []

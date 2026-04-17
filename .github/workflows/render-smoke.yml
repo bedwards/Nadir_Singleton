@@ -1,0 +1,27 @@
+name: render-smoke
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: build
+        run: cargo build --release -p nadir
+      - name: help tree
+        run: |
+          ./target/release/nadir --help
+          ./target/release/nadir vox --help
+          ./target/release/nadir dsp --help
+          ./target/release/nadir song --help
+          ./target/release/nadir album --help
+          ./target/release/nadir pitch --help
+          ./target/release/nadir vad --help
+          ./target/release/nadir feat --help
+          ./target/release/nadir research --help
+          ./target/release/nadir corpus --help

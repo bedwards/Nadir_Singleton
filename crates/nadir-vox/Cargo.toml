@@ -1,0 +1,18 @@
+[package]
+name = "nadir-vox"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MBROLA-driven vocal synthesis: lyrics → phonemes → pitch → raw PCM."
+
+[dependencies]
+nadir-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+tracing.workspace = true
+fs-err.workspace = true
+hound.workspace = true
+tempfile.workspace = true

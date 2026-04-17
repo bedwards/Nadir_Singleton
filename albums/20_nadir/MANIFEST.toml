@@ -1,0 +1,12 @@
+[album]
+n = 20
+slug = "20_nadir"
+title = "Nadir"
+planned_tracks = 14
+
+[narrative]
+palette = "coda, de-resolution"
+arc = "the coda: silence grows, pitch de-resolves; we arrive at the nadir."
+
+[corpus]
+motifs = []

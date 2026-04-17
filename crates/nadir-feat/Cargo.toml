@@ -1,0 +1,16 @@
+[package]
+name = "nadir-feat"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "openSMILE wrapper: feature extraction and audit loop."
+
+[dependencies]
+nadir-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+tracing.workspace = true
+fs-err.workspace = true

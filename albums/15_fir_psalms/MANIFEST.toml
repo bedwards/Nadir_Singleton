@@ -1,0 +1,12 @@
+[album]
+n = 15
+slug = "15_fir_psalms"
+title = "FIR Psalms"
+planned_tracks = 14
+
+[narrative]
+palette = "csdr-shaped hymns"
+arc = "hymns blessed by cascaded FIR filters; liturgy of the passband."
+
+[corpus]
+motifs = []

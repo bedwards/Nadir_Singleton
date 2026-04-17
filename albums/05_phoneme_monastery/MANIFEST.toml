@@ -1,0 +1,12 @@
+[album]
+n = 5
+slug = "05_phoneme_monastery"
+title = "Phoneme Monastery"
+planned_tracks = 15
+
+[narrative]
+palette = "vowel drones, chant"
+arc = "ritual vowel drones; a brotherhood of /a/, /o/, /u/."
+
+[corpus]
+motifs = []

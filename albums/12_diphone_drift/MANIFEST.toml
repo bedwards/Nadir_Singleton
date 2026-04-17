@@ -1,0 +1,12 @@
+[album]
+n = 12
+slug = "12_diphone_drift"
+title = "Diphone Drift"
+planned_tracks = 15
+
+[narrative]
+palette = "tape-like slow change"
+arc = "long slow drifts, 0.2¢ per bar; the sound of time leaning."
+
+[corpus]
+motifs = []

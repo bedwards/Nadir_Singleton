@@ -1,0 +1,29 @@
+# Pinned versions of the five core tools (April 2026).
+# Used by scripts/bootstrap.sh and CI to enforce reproducibility.
+
+[praat]
+version = "6.4.x"
+source = "brew --cask praat"
+
+[mbrola]
+version = "3.3+"
+source = "https://github.com/numediart/MBROLA"
+git_ref = "master"
+
+[mbrola_voices]
+source = "https://github.com/numediart/MBROLA-voices"
+voices = ["us1", "us3", "en1"]
+
+[opensmile]
+version = "3.0.2"
+source = "https://github.com/audeering/opensmile"
+git_ref = "master"
+
+[silero_vad]
+version = "5.1+"
+source = "pypi:silero-vad"
+
+[csdr]
+fork = "jketterl"
+source = "https://github.com/jketterl/csdr"
+git_ref = "master"

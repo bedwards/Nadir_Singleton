@@ -1,0 +1,17 @@
+[package]
+name = "nadir-dsp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "csdr pipeline DSL: build and run Unix-pipe DSP graphs."
+
+[dependencies]
+nadir-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+toml.workspace = true
+tracing.workspace = true
+fs-err.workspace = true

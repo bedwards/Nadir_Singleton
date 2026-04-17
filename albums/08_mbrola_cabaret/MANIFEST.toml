@@ -1,0 +1,12 @@
+[album]
+n = 8
+slug = "08_mbrola_cabaret"
+title = "MBROLA Cabaret"
+planned_tracks = 18
+
+[narrative]
+palette = "ragtime/cabaret forms"
+arc = "the singleton in a cabaret: ragtime turnarounds, knowing winks."
+
+[corpus]
+motifs = []

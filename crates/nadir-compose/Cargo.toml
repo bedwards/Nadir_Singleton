@@ -1,0 +1,14 @@
+[package]
+name = "nadir-compose"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Compose module: scales, keys, meter, lyric→phoneme, melodic motifs."
+
+[dependencies]
+nadir-core.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+tracing.workspace = true

@@ -1,0 +1,16 @@
+[package]
+name = "nadir-vad"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Rust-side thin wrapper calling our python nadir-vad package for Silero segmentation."
+
+[dependencies]
+nadir-core.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+fs-err.workspace = true

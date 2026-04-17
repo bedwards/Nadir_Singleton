@@ -1,0 +1,12 @@
+[album]
+n = 11
+slug = "11_voicing_fraction"
+title = "Voicing Fraction"
+planned_tracks = 18
+
+[narrative]
+palette = "pop hooks"
+arc = "pop shapes: hooks, refrains, choruses you can hum back to us."
+
+[corpus]
+motifs = []

@@ -1,0 +1,12 @@
+[album]
+n = 4
+slug = "04_vad_epistles"
+title = "VAD Epistles"
+planned_tracks = 14
+
+[narrative]
+palette = "letter-form tracks"
+arc = "fourteen letters; each ends in calibrated silence announcing the next."
+
+[corpus]
+motifs = []

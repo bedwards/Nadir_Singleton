@@ -1,0 +1,38 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Python (uv)
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Tool builds
+tools/build/
+tools/src/*/build/
+tools/bin/
+
+# Renders / working audio (keep final mixes under albums/)
+albums/**/work/
+albums/**/*.tmp.wav
+*.pho.tmp
+render.scratch/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Secrets
+.env
+.envrc
+
+# Logs
+*.log
+logs/

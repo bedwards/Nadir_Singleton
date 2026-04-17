@@ -1,0 +1,12 @@
+[album]
+n = 14
+slug = "14_silero_rooms"
+title = "Silero Rooms"
+planned_tracks = 16
+
+[narrative]
+palette = "onset-driven percussive"
+arc = "rooms whose rhythm is decided by voice-activity onsets."
+
+[corpus]
+motifs = []

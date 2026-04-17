@@ -1,0 +1,31 @@
+[package]
+name = "nadir"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Nadir_Singleton: single CLI orchestrating MBROLA, Praat, openSMILE, Silero-VAD, csdr."
+
+[[bin]]
+name = "nadir"
+path = "src/main.rs"
+
+[dependencies]
+nadir-core.workspace = true
+nadir-vox.workspace = true
+nadir-dsp.workspace = true
+nadir-feat.workspace = true
+nadir-praat.workspace = true
+nadir-compose.workspace = true
+nadir-render.workspace = true
+nadir-vad.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+fs-err.workspace = true
+camino.workspace = true

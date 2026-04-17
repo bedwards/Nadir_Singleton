@@ -1,0 +1,12 @@
+[album]
+n = 7
+slug = "07_praat_lieder"
+title = "Praat Lieder"
+planned_tracks = 16
+
+[narrative]
+palette = "minimal art-song"
+arc = "sixteen art songs, one voice, minimal bed; PSOLA as the composer."
+
+[corpus]
+motifs = []

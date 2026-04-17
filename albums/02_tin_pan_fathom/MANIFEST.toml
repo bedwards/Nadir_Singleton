@@ -1,0 +1,12 @@
+[album]
+n = 2
+slug = "02_tin_pan_fathom"
+title = "Tin Pan Fathom"
+planned_tracks = 18
+
+[narrative]
+palette = "TPA harmonic turns on diphones"
+arc = "vaudeville ghosts of Tin Pan Alley push diphone voices through old forms."
+
+[corpus]
+motifs = []

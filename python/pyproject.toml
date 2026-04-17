@@ -1,0 +1,31 @@
+[project]
+name = "nadir-python"
+version = "0.1.0"
+description = "Nadir_Singleton Python workspace root (uv)."
+requires-python = ">=3.11"
+dependencies = [
+    "nadir-vad",
+    "nadir-lyric-g2p",
+    "nadir-praat-scripts",
+]
+
+[tool.uv.workspace]
+members = ["nadir-vad", "nadir-lyric-g2p", "nadir-praat-scripts"]
+
+[tool.uv.sources]
+nadir-vad = { workspace = true }
+nadir-lyric-g2p = { workspace = true }
+nadir-praat-scripts = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.4",
+]

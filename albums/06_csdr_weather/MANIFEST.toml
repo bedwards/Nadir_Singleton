@@ -1,0 +1,12 @@
+[album]
+n = 6
+slug = "06_csdr_weather"
+title = "csdr Weather"
+planned_tracks = 14
+
+[narrative]
+palette = "DSP-only beds"
+arc = "weather made entirely of csdr pipes; no voice, only shaped air."
+
+[corpus]
+motifs = []

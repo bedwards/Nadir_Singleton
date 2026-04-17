@@ -1,0 +1,12 @@
+[album]
+n = 3
+slug = "03_the_spectral_fair"
+title = "The Spectral Fair"
+planned_tracks = 16
+
+[narrative]
+palette = "carnival eGeMAPS vectors"
+arc = "a fairground of feature vectors: each attraction a functional family."
+
+[corpus]
+motifs = []

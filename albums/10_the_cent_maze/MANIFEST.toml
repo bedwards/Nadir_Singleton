@@ -1,0 +1,12 @@
+[album]
+n = 10
+slug = "10_the_cent_maze"
+title = "The Cent Maze"
+planned_tracks = 16
+
+[narrative]
+palette = "microtonal"
+arc = "quarter-tones and smaller; a labyrinth drawn in cents."
+
+[corpus]
+motifs = []

@@ -1,0 +1,12 @@
+[album]
+n = 19
+slug = "19_singleton_suite"
+title = "Singleton Suite"
+planned_tracks = 24
+
+[narrative]
+palette = "long-form, 24 connected tracks"
+arc = "the apex: twenty-four movements connected by a twelve-tone spine."
+
+[corpus]
+motifs = []

@@ -1,0 +1,12 @@
+[album]
+n = 16
+slug = "16_pitch_pilgrimage"
+title = "Pitch Pilgrimage"
+planned_tracks = 16
+
+[narrative]
+palette = "modal per track"
+arc = "one mode per track, a walking tour of the diatonic and beyond."
+
+[corpus]
+motifs = []
