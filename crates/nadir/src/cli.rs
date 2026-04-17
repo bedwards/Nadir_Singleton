@@ -75,6 +75,18 @@ pub enum AlbumSub {
     },
     /// Show liner notes.
     Liner { slug: String },
+    /// Render every track in an album.
+    Render {
+        slug: String,
+        /// Only render tracks whose lyric.txt is non-empty.
+        #[arg(long)]
+        only_with_lyrics: bool,
+        /// Continue past tracks that fail.
+        #[arg(long)]
+        keep_going: bool,
+    },
+    /// Play every rendered track in an album in order.
+    Play { slug: String },
 }
 
 // ─────────── song ───────────
@@ -410,6 +422,75 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             let p = format!("albums/{slug}/LINER.md");
             let s = fs_err::read_to_string(&p).with_context(|| format!("read {p}"))?;
             println!("{s}");
+            Ok(())
+        }
+        AlbumSub::Render { slug, only_with_lyrics, keep_going } => {
+            let album_dir = std::path::Path::new("albums").join(&slug);
+            let mut tracks: Vec<(u8, std::path::PathBuf)> = Vec::new();
+            for entry in fs_err::read_dir(&album_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if !path.is_dir() { continue; }
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                // Expect NN_slug
+                if let Some((num, _)) = name.split_once('_') {
+                    if let Ok(n) = num.parse::<u8>() {
+                        if only_with_lyrics {
+                            let l = path.join("lyric.txt");
+                            let txt = fs_err::read_to_string(&l).unwrap_or_default();
+                            if txt.trim().is_empty() { continue; }
+                        }
+                        tracks.push((n, path));
+                    }
+                }
+            }
+            tracks.sort_by_key(|(n, _)| *n);
+            let total = tracks.len();
+            let mut rendered = 0usize;
+            for (n, _path) in &tracks {
+                println!("▸ [{n:02}/{total}] rendering track {n}");
+                let exe = std::env::current_exe()?;
+                let status = std::process::Command::new(&exe)
+                    .args([
+                        "song", "render",
+                        "--album", &slug,
+                        "--track", &n.to_string(),
+                    ])
+                    .status()
+                    .context("spawn self for song render")?;
+                if status.success() {
+                    rendered += 1;
+                } else if !keep_going {
+                    anyhow::bail!("track {n} failed; pass --keep-going to continue");
+                } else {
+                    tracing::warn!(track = n, "failed but keeping going");
+                }
+            }
+            println!("rendered {rendered}/{total} tracks");
+            Ok(())
+        }
+        AlbumSub::Play { slug } => {
+            let album_dir = std::path::Path::new("albums").join(&slug);
+            let mut tracks: Vec<(u8, std::path::PathBuf)> = Vec::new();
+            for entry in fs_err::read_dir(&album_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                let render = path.join("render.wav");
+                if render.exists() {
+                    if let Some((num, _)) = entry.file_name().to_string_lossy().split_once('_') {
+                        if let Ok(n) = num.parse::<u8>() {
+                            tracks.push((n, render));
+                        }
+                    }
+                }
+            }
+            tracks.sort_by_key(|(n, _)| *n);
+            let total = tracks.len();
+            for (i, (n, path)) in tracks.iter().enumerate() {
+                println!("▸ [{}/{total}] track {n}: {}", i + 1, path.display());
+                dispatch_play(path)?;
+            }
             Ok(())
         }
     }
