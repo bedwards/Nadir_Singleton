@@ -684,6 +684,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_pingpong: bool,
                 #[serde(default = "default_pulse_pingpong_width")]
                 pulse_pingpong_width: f32,
+                #[serde(default = "default_on")]
+                kick: bool,
+                #[serde(default = "default_on")]
+                hat: bool,
+                #[serde(default = "default_on")]
+                bass_arp: bool,
                 #[serde(default = "default_echo_on")]
                 echo: bool,
                 #[serde(default = "default_echo_taps")]
@@ -734,6 +740,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 0.55
             }
             fn default_echo_on() -> bool {
+                true
+            }
+            fn default_on() -> bool {
                 true
             }
             fn default_echo_taps() -> Vec<(u32, f32)> {
@@ -812,6 +821,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_pan: default_pulse_pan(),
                 pulse_pingpong: default_pulse_pingpong(),
                 pulse_pingpong_width: default_pulse_pingpong_width(),
+                kick: default_on(),
+                hat: default_on(),
+                bass_arp: default_on(),
                 echo: default_echo_on(),
                 echo_taps: default_echo_taps(),
                 secondary_voices: Vec::new(),
@@ -1205,6 +1217,57 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 Vec::new()
             };
 
+            // ── rhythmic stems (kick / hat / bass_arp), BPM-driven, key-aware ──
+            let kick_path = stems_dir.join("kick.wav");
+            let hat_path = stems_dir.join("hat.wav");
+            let bass_path = stems_dir.join("bass_arp.wav");
+            let tonic_low = sc.degrees_hz(-2).first().copied().unwrap_or(55.0);
+            let deg = sc.degrees_hz(-1);
+            let kick_stem: Option<Vec<f32>> = if dsp_cfg.kick {
+                let grid = nadir_render::beat_grid_times(m.track.bpm, dur_s, 1);
+                let mut s = nadir_render::pulse_track_pitched(&grid, dur_s, 130, tonic_low);
+                // Shape low-band
+                let low = 40.0 / nadir_render::MASTER_SR as f32;
+                let high = 200.0 / nadir_render::MASTER_SR as f32;
+                s = nadir_render::band_limit_via_csdr(&s, low, high, 0.01).unwrap_or(s);
+                nadir_render::f32_to_wav_s16(&s, nadir_render::MASTER_SR, &kick_path)?;
+                Some(s)
+            } else {
+                None
+            };
+            let hat_stem: Option<Vec<f32>> = if dsp_cfg.hat {
+                let grid = nadir_render::beat_grid_times(m.track.bpm, dur_s, 2);
+                // Offset hat by half-16th to land on off-beats
+                let grid_off: Vec<f32> = grid
+                    .iter()
+                    .map(|t| t + 60.0 / (m.track.bpm * 4.0))
+                    .filter(|t| *t < dur_s)
+                    .collect();
+                let mut s = nadir_render::pulse_track(&grid_off, dur_s, 28, m.track.seed ^ 0xA7);
+                let low = 3000.0 / nadir_render::MASTER_SR as f32;
+                let high = 8000.0 / nadir_render::MASTER_SR as f32;
+                s = nadir_render::band_limit_via_csdr(&s, low, high, 0.01).unwrap_or(s);
+                nadir_render::f32_to_wav_s16(&s, nadir_render::MASTER_SR, &hat_path)?;
+                Some(s)
+            } else {
+                None
+            };
+            let bass_stem: Option<Vec<f32>> = if dsp_cfg.bass_arp && !deg.is_empty() {
+                // root, fifth, octave, fifth at -1 octave → arpeggio
+                let root = deg[0];
+                let fifth = deg.get(4).copied().unwrap_or(root * 1.5);
+                let octave = root * 2.0;
+                let cycle = vec![root, fifth, octave, fifth];
+                let s = nadir_render::arp_track(&cycle, dur_s, m.track.bpm, 4, 100);
+                let low = 60.0 / nadir_render::MASTER_SR as f32;
+                let high = 500.0 / nadir_render::MASTER_SR as f32;
+                let shaped = nadir_render::band_limit_via_csdr(&s, low, high, 0.01).unwrap_or(s);
+                nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &bass_path)?;
+                Some(shaped)
+            } else {
+                None
+            };
+
             // ── per-stem loudness normalization (RMS proxy for LUFS) ──
             // Unified target: every production stem lands at -18 dBFS integrated
             // RMS. Secondaries sit a bit below so the primary vocal wins the
@@ -1261,8 +1324,22 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 nadir_render::normalize_to_dbfs(samples, pulse_target, 18.0);
             }
             for (samples, _, _) in secondary_stems.iter_mut() {
-                // Secondaries blend with primary vocal — slightly below
                 nadir_render::normalize_to_dbfs(samples, vox_target - 3.0, 18.0);
+            }
+            let mut kick_stem = kick_stem;
+            if let Some(ref mut k) = kick_stem {
+                nadir_render::normalize_to_dbfs(k, stem_default, 18.0);
+                nadir_render::f32_to_wav_s16(k, nadir_render::MASTER_SR, &kick_path)?;
+            }
+            let mut hat_stem = hat_stem;
+            if let Some(ref mut h) = hat_stem {
+                nadir_render::normalize_to_dbfs(h, stem_default, 18.0);
+                nadir_render::f32_to_wav_s16(h, nadir_render::MASTER_SR, &hat_path)?;
+            }
+            let mut bass_stem = bass_stem;
+            if let Some(ref mut b) = bass_stem {
+                nadir_render::normalize_to_dbfs(b, stem_default, 18.0);
+                nadir_render::f32_to_wav_s16(b, nadir_render::MASTER_SR, &bass_path)?;
             }
 
             let mut stems: Vec<(&[f32], f32, f32)> = Vec::new(); // (samples, gain, pan)
@@ -1271,6 +1348,15 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             for (samples, pan) in &pulse_stems {
                 stems.push((samples.as_slice(), dsp_cfg.pulse_gain, *pan));
+            }
+            if let Some(ref k) = kick_stem {
+                stems.push((k.as_slice(), 0.85, 0.0));
+            }
+            if let Some(ref h) = hat_stem {
+                stems.push((h.as_slice(), 0.45, 0.25));
+            }
+            if let Some(ref b) = bass_stem {
+                stems.push((b.as_slice(), 0.7, -0.15));
             }
             for (samples, gain, pan) in &secondary_stems {
                 stems.push((samples.as_slice(), *gain, *pan));
