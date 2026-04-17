@@ -522,7 +522,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             bed_preset,
             strict,
         } => {
-            use nadir_compose::{plan_melody_phrased, render_vox_pho};
+            use nadir_compose::{plan_melody_phrased, render_vox_pho_phrased};
             use nadir_core::{Key, Scale, ScaleKind};
             use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
             use nadir_vox::{synth_to_wav, MbrolaConfig};
@@ -678,7 +678,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 &sc, &syllables, &phrase_lens,
                 m.track.seed, 220.0, m.track.bpm, &stresses,
             );
-            let stream = render_vox_pho(&notes, &phonemes);
+            let stream = render_vox_pho_phrased(&notes, &phonemes, &phrase_lens, 30, 400);
 
             let vox_cfg = MbrolaConfig {
                 voice: m.track.mbrola_voice.clone(),
@@ -753,7 +753,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     m.track.seed.wrapping_add(0xB17AA11A),
                     shifted_center, m.track.bpm, &stresses,
                 );
-                let sv_stream = render_vox_pho(&sv_notes, &sv_phonemes);
+                let sv_stream = render_vox_pho_phrased(&sv_notes, &sv_phonemes, &phrase_lens, 30, 400);
                 let sv_cfg = MbrolaConfig {
                     voice: sv.voice.clone(),
                     ..Default::default()
