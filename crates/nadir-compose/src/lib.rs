@@ -70,6 +70,7 @@ pub fn plan_melody_phrased(
     let mut notes = Vec::with_capacity(syllables.len());
     let mut syl_cursor = 0usize;
     let max_degree = degrees.len() as i32 - 1;
+    let last_phrase_idx = phrase_lens.len().saturating_sub(1);
 
     for (p, &plen) in phrase_lens.iter().enumerate() {
         if plen == 0 {
@@ -93,8 +94,21 @@ pub fn plan_melody_phrased(
             let stress = stresses.get(i).copied().unwrap_or(1.0);
             // Stress boost: primary-stressed syllables nudge toward contour peak
             let stress_boost = if stress >= 1.15 { 1 } else { 0 };
-            let idx = (center_idx + offset_f.round() as i32 + jitter() + stress_boost)
-                .clamp(0, max_degree);
+            let is_final_cadence = p == last_phrase_idx && k == plen - 1;
+            // Cadence: the very last note of the very last phrase lands on the
+            // tonic (scale degree 0). Penultimate leans toward the tonic too.
+            let is_penult_cadence = p == last_phrase_idx && plen >= 2 && k == plen - 2;
+            let idx = if is_final_cadence {
+                // Tonic = degree 0 at the nearest octave. degrees_hz(0) returns
+                // one octave of degrees, so index 0 is always the tonic.
+                0
+            } else if is_penult_cadence {
+                // Supertonic: one step above tonic
+                1.min(max_degree)
+            } else {
+                (center_idx + offset_f.round() as i32 + jitter() + stress_boost)
+                    .clamp(0, max_degree)
+            };
             let mut dur_ms = if stress >= 1.15 {
                 beat_ms
             } else if stress < 0.9 {
