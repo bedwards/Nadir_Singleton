@@ -9,4 +9,4 @@ palette = "coda, de-resolution"
 arc = "the coda: silence grows, pitch de-resolves; we arrive at the nadir."
 
 [corpus]
-motifs = []
+motifs = ["m.nadir_silence", "m.drift_delta"]

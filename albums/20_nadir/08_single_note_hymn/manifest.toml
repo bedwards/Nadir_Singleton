@@ -1,0 +1,27 @@
+[track]
+n = 8
+slug = "08_single_note_hymn"
+title = "Single-Note Hymn"
+key = "A"
+scale = "custom"
+bpm = 40
+meter = [4, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "one pitch remains; the hymn has only a tonic; melody becomes memory"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "monotonal"]
+reprises = ["m.vowel_drone", "m.fir_blessing", "m.hook"]
+
+[targets]
+tessitura_hz = [105, 115]
+pitch_error_ceiling_cents = 25.0
+vox_loudness_lufs = -21.5
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

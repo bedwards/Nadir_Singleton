@@ -1,0 +1,27 @@
+[track]
+n = 4
+slug = "04_pitch_begins_to_forget"
+title = "Pitch Begins to Forget"
+key = "A"
+scale = "chromatic"
+bpm = 46
+meter = [4, 4]
+bars = 14
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "scale degrees blur; the PSOLA snap loosens; pitch slides between tones"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "de-quantization"]
+reprises = ["m.quarter_tone_approach", "m.modal_shift"]
+
+[targets]
+tessitura_hz = [105, 300]
+pitch_error_ceiling_cents = 15.0
+vox_loudness_lufs = -19.5
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

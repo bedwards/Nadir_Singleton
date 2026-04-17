@@ -1,0 +1,27 @@
+[track]
+n = 13
+slug = "13_what_remains"
+title = "What Remains"
+key = "A"
+scale = "custom"
+bpm = 40
+meter = [4, 4]
+bars = 8
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "inventory of what is left before the final utterance; one word, spoken"
+motifs = ["m.nadir_silence"]
+carries = ["de-resolution", "stock-taking"]
+reprises = ["m.vowel_drone", "m.drift_delta"]
+
+[targets]
+tessitura_hz = [100, 120]
+pitch_error_ceiling_cents = 30.0
+vox_loudness_lufs = -23.0
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"

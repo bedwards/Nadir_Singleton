@@ -1,0 +1,32 @@
+# NADIR in International Morse.
+# No words. Only breath markings. The G2P pipeline maps [h]/[hh] to aspirated /h/ phonemes
+# and `.` to calibrated pure silences per the grid documented in NOTES.md.
+#
+# Letters: N=-. A=.- D=-.. I=.. R=.-.
+# Grid: dot [h]=200 ms, dash [hh]=600 ms, intra-letter gap=200 ms, inter-letter gap `.`=1400 ms.
+# Head and tail pure-silence pad = 1400 ms each.
+
+# ---- head silence ----
+.
+
+# N : dash dot
+[hh] [h]
+.
+
+# A : dot dash
+[h] [hh]
+.
+
+# D : dash dot dot
+[hh] [h] [h]
+.
+
+# I : dot dot
+[h] [h]
+.
+
+# R : dot dash dot
+[h] [hh] [h]
+
+# ---- tail silence ----
+.

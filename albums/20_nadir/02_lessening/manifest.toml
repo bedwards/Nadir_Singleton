@@ -1,0 +1,27 @@
+[track]
+n = 2
+slug = "02_lessening"
+title = "Lessening"
+key = "A"
+scale = "minor"
+bpm = 50
+meter = [4, 4]
+bars = 14
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "we subtract; phrases shorten; one syllable drops per line"
+motifs = ["m.drift_delta", "m.nadir_silence"]
+carries = ["de-resolution", "subtraction"]
+reprises = ["m.letter_cadence", "m.vowel_drone"]
+
+[targets]
+tessitura_hz = [115, 340]
+pitch_error_ceiling_cents = 4.5
+vox_loudness_lufs = -18.5
+
+[dsp]
+bed_preset = "shaped_noise_nadir"
+texture_preset = "silence_envelope"
+sample_source = "klatt_texture"
