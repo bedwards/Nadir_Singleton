@@ -446,18 +446,25 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let sk = ScaleKind::from_str(&m.track.scale).map_err(|e| anyhow::anyhow!(e))?;
             let sc = Scale::new(k, sk);
 
-            // G2P
+            // G2P with stress weights
             let g2p_out = Command::new("uv")
                 .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
-                       "--voice", &m.track.mbrola_voice, "--text", &lyric])
+                       "--stress", "--voice", &m.track.mbrola_voice, "--text", &lyric])
                 .output().context("g2p spawn")?;
             if !g2p_out.status.success() {
                 anyhow::bail!("g2p: {}", String::from_utf8_lossy(&g2p_out.stderr));
             }
-            let phonemes: Vec<Vec<String>> = serde_json::from_slice(&g2p_out.stdout)?;
+            let word_data: Vec<serde_json::Value> = serde_json::from_slice(&g2p_out.stdout)?;
+            let phonemes: Vec<Vec<String>> = word_data.iter()
+                .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
+                    .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                .collect();
+            let stresses: Vec<f32> = word_data.iter()
+                .map(|v| v["stress"].as_f64().unwrap_or(1.0) as f32)
+                .collect();
             let syllables: Vec<String> = lyric.split_whitespace().map(str::to_string).collect();
 
-            let notes = plan_melody(&sc, &syllables, m.track.seed, 220.0);
+            let notes = plan_melody(&sc, &syllables, m.track.seed, 220.0, m.track.bpm, &stresses);
             let stream = render_vox_pho(&notes, &phonemes);
 
             let vox_cfg = MbrolaConfig {
@@ -566,7 +573,7 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
             voice,
             key,
             scale,
-            bpm: _,
+            bpm,
             seed,
             out,
         } => {
@@ -575,18 +582,25 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
             use std::process::Command;
             use std::str::FromStr;
 
-            // G2P via Python subprocess
+            // G2P via Python subprocess (with stress weights)
             let g2p_output = Command::new("uv")
                 .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
-                       "--voice", &voice, "--text", &text])
+                       "--stress", "--voice", &voice, "--text", &text])
                 .output()
                 .context("spawn uv for g2p")?;
             if !g2p_output.status.success() {
                 anyhow::bail!("g2p failed: {}", String::from_utf8_lossy(&g2p_output.stderr));
             }
-            // JSON: Vec<Vec<String>> — one inner list per word
-            let phonemes_per_word: Vec<Vec<String>> =
+            // JSON: Vec<{phonemes:[str], stress:f32}>
+            let word_data: Vec<serde_json::Value> =
                 serde_json::from_slice(&g2p_output.stdout).context("parse g2p json")?;
+            let phonemes_per_word: Vec<Vec<String>> = word_data.iter()
+                .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
+                    .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                .collect();
+            let stresses: Vec<f32> = word_data.iter()
+                .map(|v| v["stress"].as_f64().unwrap_or(1.0) as f32)
+                .collect();
 
             let syllables: Vec<String> = text.split_whitespace()
                 .map(str::to_string)
@@ -598,8 +612,7 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
                 .map_err(|e| anyhow::anyhow!(e))?;
             let sc = Scale::new(k, sk);
 
-            // center around A4 for now; bpm unused in melody planning (durations fixed)
-            let notes = plan_melody(&sc, &syllables, seed, 220.0);
+            let notes = plan_melody(&sc, &syllables, seed, 220.0, bpm, &stresses);
             let stream = render_vox_pho(&notes, &phonemes_per_word);
             let cfg = MbrolaConfig {
                 voice: voice.clone(),
