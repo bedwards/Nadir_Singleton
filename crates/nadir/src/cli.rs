@@ -962,7 +962,28 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             Ok(())
         }
         SongSub::Audit { album, track } => {
-            println!("audit stub — album={album} track={track}");
+            let album_dir = std::path::Path::new("albums").join(&album);
+            let mut track_dir: Option<std::path::PathBuf> = None;
+            for entry in fs_err::read_dir(&album_dir)? {
+                let entry = entry?;
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if let Some((num, _)) = name.split_once('_') {
+                    if num.parse::<u8>().ok() == Some(track) {
+                        track_dir = Some(entry.path());
+                        break;
+                    }
+                }
+            }
+            let td = track_dir.with_context(|| format!("track {track} not found in {album}"))?;
+            let stems_dir = td.join("stems");
+            let tuned = stems_dir.join("tuned_vox.wav");
+            let target = stems_dir.join("f0_target.csv");
+            if !tuned.exists() || !target.exists() {
+                anyhow::bail!("no stems — run `nadir song render` first");
+            }
+            let rms = run_pitch_audit(&tuned, &target, &stems_dir, None)?;
+            println!("audit: {rms:.1} cents rms");
             Ok(())
         }
         SongSub::Listen { album, track, bed_preset, bpm } => {
