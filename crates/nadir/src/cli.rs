@@ -47,6 +47,10 @@ pub enum Cmd {
     Research(ResearchCmd),
     /// Print versions of all five core tools.
     Doctor,
+    /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
+    Play {
+        file: PathBuf,
+    },
 }
 
 // ─────────── album ───────────
@@ -330,7 +334,27 @@ pub fn dispatch(cli: Cli) -> Result<()> {
         Corpus(c) => dispatch_corpus(c),
         Research(c) => dispatch_research(c),
         Doctor => dispatch_doctor(),
+        Play { file } => dispatch_play(&file),
     }
+}
+
+fn dispatch_play(file: &std::path::Path) -> Result<()> {
+    if !file.exists() {
+        anyhow::bail!("no such file: {}", file.display());
+    }
+    let (bin, args): (&str, Vec<&std::ffi::OsStr>) = if cfg!(target_os = "macos") {
+        ("afplay", vec![file.as_os_str()])
+    } else {
+        ("aplay", vec![file.as_os_str()])
+    };
+    let status = std::process::Command::new(bin)
+        .args(&args)
+        .status()
+        .with_context(|| format!("spawn {bin}"))?;
+    if !status.success() {
+        anyhow::bail!("{bin} failed ({status})");
+    }
+    Ok(())
 }
 
 fn dispatch_album(c: AlbumCmd) -> Result<()> {
