@@ -104,6 +104,27 @@ pub enum SongSub {
         track: u8,
         #[arg(long, default_value = "out.wav")]
         out: PathBuf,
+        /// Override manifest voice (e.g. us1, us3, en1).
+        #[arg(long)]
+        voice: Option<String>,
+        /// Override manifest bpm.
+        #[arg(long)]
+        bpm: Option<f32>,
+        /// Override manifest key (A..G with optional # / b).
+        #[arg(long)]
+        key: Option<String>,
+        /// Override manifest scale (minor, major, dorian, …).
+        #[arg(long)]
+        scale: Option<String>,
+        /// Override manifest seed.
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Override manifest bed preset.
+        #[arg(long)]
+        bed_preset: Option<String>,
+        /// Fail with non-zero exit if audit ceiling exceeded.
+        #[arg(long)]
+        strict: bool,
     },
     /// Audit a rendered track against quality gates.
     Audit {
@@ -408,7 +429,18 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             println!("created {dir}");
             Ok(())
         }
-        SongSub::Render { album, track, out } => {
+        SongSub::Render {
+            album,
+            track,
+            out,
+            voice,
+            bpm,
+            key,
+            scale,
+            seed,
+            bed_preset,
+            strict,
+        } => {
             use nadir_compose::{plan_melody, render_vox_pho};
             use nadir_core::{Key, Scale, ScaleKind};
             use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
@@ -490,8 +522,14 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             };
 
             let manifest_text = fs_err::read_to_string(track_dir.join("manifest.toml"))?;
-            let m: FullManifest = toml::from_str(&manifest_text)?;
-            let dsp_cfg = m.dsp.unwrap_or(DspFields {
+            let mut m: FullManifest = toml::from_str(&manifest_text)?;
+            // Apply CLI overrides onto manifest fields
+            if let Some(v) = voice.as_ref() { m.track.mbrola_voice = v.clone(); }
+            if let Some(b) = bpm { m.track.bpm = b; }
+            if let Some(k) = key.as_ref() { m.track.key = k.clone(); }
+            if let Some(s) = scale.as_ref() { m.track.scale = s.clone(); }
+            if let Some(sd) = seed { m.track.seed = sd; }
+            let mut dsp_cfg = m.dsp.unwrap_or(DspFields {
                 bed_preset: None,
                 bed_gain: default_bed_gain(),
                 vocal_gain: default_vocal_gain(),
@@ -499,6 +537,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 pulse_gain: default_pulse_gain(),
                 pulse_ms: default_pulse_ms(),
             });
+            if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
             let lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
                 .unwrap_or_default()
                 .lines()
@@ -658,15 +697,22 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
 
             // ── openSMILE audit ──
+            let ceiling = m.targets.as_ref().and_then(|t| t.pitch_error_ceiling_cents);
             let audit_result = run_pitch_audit(
                 &tuned_vox_path,
                 &f0_target_path,
                 &stems_dir,
-                m.targets.as_ref().and_then(|t| t.pitch_error_ceiling_cents),
+                ceiling,
             );
             match audit_result {
                 Ok(rms) => {
                     println!("audit: {rms:.1} cents rms");
+                    if strict {
+                        let c = ceiling.unwrap_or(30.0);
+                        if rms > c {
+                            anyhow::bail!("audit failed: rms_cents {rms:.1} > ceiling {c:.1}");
+                        }
+                    }
                 }
                 Err(e) => {
                     tracing::warn!(error=%e, "openSMILE audit failed (non-fatal)");

@@ -47,34 +47,50 @@ impl FeatureSet {
 /// `name;frameTime;F0final_sma` columns — compatible with `parse_f0_track`.
 pub fn extract_f0_lld(cfg: &SmileConfig, in_wav: &Path, out_csv: &Path) -> Result<()> {
     let conf = cfg.config_dir.join("prosody/smileF0.conf");
-    let status = Command::new(&cfg.bin)
+    let output = Command::new(&cfg.bin)
         .arg("-C")
         .arg(&conf)
         .arg("-I")
         .arg(in_wav)
         .arg("-csvoutput")
         .arg(out_csv)
-        .status()
+        .arg("-loglevel")
+        .arg("1")
+        .stderr(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .output()
         .with_context(|| format!("spawn SMILExtract at {}", cfg.bin.display()))?;
+    let status = output.status;
     if !status.success() {
-        anyhow::bail!("SMILExtract smileF0 failed ({status})");
+        anyhow::bail!(
+            "SMILExtract smileF0 failed ({status}): {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     Ok(())
 }
 
 pub fn extract_csv(cfg: &SmileConfig, fs: FeatureSet, in_wav: &Path, out_csv: &Path) -> Result<()> {
     let conf = fs.config_path(&cfg.config_dir);
-    let status = Command::new(&cfg.bin)
+    let output = Command::new(&cfg.bin)
         .arg("-C")
         .arg(&conf)
         .arg("-I")
         .arg(in_wav)
         .arg("-csvoutput")
         .arg(out_csv)
-        .status()
+        .arg("-loglevel")
+        .arg("1")
+        .stderr(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .output()
         .with_context(|| format!("spawn SMILExtract at {}", cfg.bin.display()))?;
+    let status = output.status;
     if !status.success() {
-        anyhow::bail!("SMILExtract failed ({status})");
+        anyhow::bail!(
+            "SMILExtract failed ({status}): {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     Ok(())
 }
