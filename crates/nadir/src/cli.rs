@@ -385,10 +385,133 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             Ok(())
         }
         SongSub::Render { album, track, out } => {
-            println!(
-                "render stub — album={album} track={track} out={}",
-                out.display()
-            );
+            use nadir_compose::{plan_melody, render_vox_pho};
+            use nadir_core::{Key, Scale, ScaleKind};
+            use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
+            use nadir_vox::{synth_to_wav, MbrolaConfig};
+            use serde::Deserialize;
+            use std::process::Command;
+            use std::str::FromStr;
+
+            #[derive(Deserialize)]
+            struct TrackManifest {
+                track: TrackFields,
+            }
+            #[derive(Deserialize)]
+            struct TrackFields {
+                key: String,
+                scale: String,
+                #[serde(default = "default_bpm")]
+                bpm: f32,
+                #[serde(default = "default_voice")]
+                mbrola_voice: String,
+                #[serde(default = "default_seed")]
+                seed: u64,
+            }
+            fn default_bpm() -> f32 { 96.0 }
+            fn default_voice() -> String { "us1".into() }
+            fn default_seed() -> u64 { 42 }
+
+            // find track dir
+            let track_dir = {
+                let prefix = format!("albums/{album}/{track:02}_");
+                let entries = fs_err::read_dir(format!("albums/{album}"))
+                    .with_context(|| format!("open albums/{album}"))?;
+                let mut found = None;
+                for e in entries {
+                    let e = e?;
+                    let name = e.file_name();
+                    let name = name.to_string_lossy();
+                    if name.starts_with(&prefix[format!("albums/{album}/").len()..]) {
+                        found = Some(e.path());
+                        break;
+                    }
+                }
+                found.with_context(|| format!("no track {track:02} in {album}"))?
+            };
+
+            let manifest_text = fs_err::read_to_string(track_dir.join("manifest.toml"))?;
+            let m: TrackManifest = toml::from_str(&manifest_text)?;
+            let lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
+                .unwrap_or_default()
+                .lines()
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            if lyric.trim().is_empty() {
+                anyhow::bail!("lyric.txt is empty for track {track} in {album}");
+            }
+
+            let k = Key::from_str(&m.track.key).map_err(|e| anyhow::anyhow!(e))?;
+            let sk = ScaleKind::from_str(&m.track.scale).map_err(|e| anyhow::anyhow!(e))?;
+            let sc = Scale::new(k, sk);
+
+            // G2P
+            let g2p_out = Command::new("uv")
+                .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
+                       "--voice", &m.track.mbrola_voice, "--text", &lyric])
+                .output().context("g2p spawn")?;
+            if !g2p_out.status.success() {
+                anyhow::bail!("g2p: {}", String::from_utf8_lossy(&g2p_out.stderr));
+            }
+            let phonemes: Vec<Vec<String>> = serde_json::from_slice(&g2p_out.stdout)?;
+            let syllables: Vec<String> = lyric.split_whitespace().map(str::to_string).collect();
+
+            let notes = plan_melody(&sc, &syllables, m.track.seed, 220.0);
+            let stream = render_vox_pho(&notes, &phonemes);
+
+            let vox_cfg = MbrolaConfig {
+                voice: m.track.mbrola_voice.clone(),
+                ..Default::default()
+            };
+
+            // Synthesize raw vocal
+            let raw_vox = tempfile::NamedTempFile::with_suffix(".wav")
+                .context("create raw vox tmp")?;
+            synth_to_wav(&vox_cfg, &stream, raw_vox.path())?;
+
+            // Pitch-tune
+            let praat_cfg = PraatConfig::default();
+            let f0_csv = tempfile::NamedTempFile::with_suffix(".csv").context("f0 csv")?;
+            run_inline(&praat_cfg, &extract_f0_script(raw_vox.path(), f0_csv.path()), &[])?;
+            let f0_text = fs_err::read_to_string(f0_csv.path())?;
+            let realized: Vec<(f32, f32)> = f0_text.lines().skip(1)
+                .filter_map(|l| {
+                    let mut it = l.split(',');
+                    let t: f32 = it.next()?.parse().ok()?;
+                    let h: f32 = it.next()?.parse().ok()?;
+                    Some((t, h))
+                })
+                .collect();
+
+            let dest = if out.to_str() == Some("vox.wav") {
+                track_dir.join("render.wav")
+            } else {
+                out.clone()
+            };
+
+            if realized.is_empty() {
+                // No pitched frames — just copy raw
+                fs_err::copy(raw_vox.path(), &dest)?;
+            } else {
+                // Build target CSV (scale-snapped)
+                let target_csv = tempfile::NamedTempFile::with_suffix(".csv").context("target csv")?;
+                {
+                    use std::io::Write;
+                    let mut f = std::fs::File::create(target_csv.path())?;
+                    writeln!(f, "time_s,hz")?;
+                    for (t, hz) in &realized {
+                        let snapped = sc.snap(*hz);
+                        writeln!(f, "{t},{snapped}")?;
+                    }
+                }
+                let tuned = tempfile::NamedTempFile::with_suffix(".wav").context("tuned wav")?;
+                let script = psola_retarget_script(raw_vox.path(), target_csv.path(), tuned.path());
+                run_inline(&praat_cfg, &script, &[])?;
+                fs_err::copy(tuned.path(), &dest)?;
+            }
+
+            println!("{}", dest.display());
             Ok(())
         }
         SongSub::Audit { album, track } => {
@@ -493,14 +616,87 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
             max_passes,
             out,
         } => {
-            println!(
-                "tune stub — in={} key={} scale={} passes={} out={}",
-                in_wav.display(),
-                key,
-                scale,
-                max_passes,
-                out.display()
-            );
+            use nadir_core::{Key, Scale, ScaleKind};
+            use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
+            use std::str::FromStr;
+
+            let k = Key::from_str(&key).map_err(|e| anyhow::anyhow!(e))?;
+            let sk = ScaleKind::from_str(&scale).map_err(|e| anyhow::anyhow!(e))?;
+            let sc = Scale::new(k, sk);
+
+            let praat_cfg = PraatConfig::default();
+
+            let mut current = in_wav.clone();
+            let mut tmp_wavs: Vec<tempfile::NamedTempFile> = Vec::new();
+
+            for pass in 0..max_passes {
+                // Extract realized F0 via Praat
+                let f0_csv = tempfile::NamedTempFile::with_suffix(".csv")
+                    .context("create f0 csv")?;
+                let f0_script = extract_f0_script(&current, f0_csv.path());
+                run_inline(&praat_cfg, &f0_script, &[])?;
+                let f0_text = fs_err::read_to_string(f0_csv.path())?;
+                // Parse simple time_s,hz CSV (skip header)
+                let realized: Vec<(f32, f32)> = f0_text.lines().skip(1)
+                    .filter_map(|l| {
+                        let mut it = l.split(',');
+                        let t: f32 = it.next()?.parse().ok()?;
+                        let h: f32 = it.next()?.parse().ok()?;
+                        Some((t, h))
+                    })
+                    .collect();
+
+                if realized.is_empty() {
+                    tracing::warn!("no F0 frames detected; stopping at pass {pass}");
+                    break;
+                }
+
+                // Snap each realized frame to nearest scale degree → target CSV
+                let target_csv = tempfile::NamedTempFile::with_suffix(".csv")
+                    .context("create target csv")?;
+                {
+                    use std::io::Write;
+                    let mut f = std::fs::File::create(target_csv.path())?;
+                    writeln!(f, "time_s,hz")?;
+                    for (t, hz) in &realized {
+                        if *hz > 0.0 {
+                            let snapped = sc.snap(*hz);
+                            writeln!(f, "{t},{snapped}")?;
+                        }
+                    }
+                }
+
+                // RMS cents between realized and snapped target
+                let snapped: Vec<(f32, f32)> = realized.iter()
+                    .map(|(t, hz)| (*t, sc.snap(*hz)))
+                    .collect();
+                let err_before: f32 = if realized.is_empty() { 0.0 } else {
+                    let sum: f32 = realized.iter().zip(snapped.iter())
+                        .map(|((_, h1), (_, h2))| {
+                            let c = 1200.0 * (h1 / h2).ln() / std::f32::consts::LN_2;
+                            c * c
+                        })
+                        .sum();
+                    (sum / realized.len() as f32).sqrt()
+                };
+                tracing::info!("pass {pass}: rms_cents before = {err_before:.1}");
+
+                if err_before < 20.0 {
+                    tracing::info!("pass {pass}: within 20¢, done");
+                    break;
+                }
+
+                // PSOLA retarget
+                let corrected = tempfile::NamedTempFile::with_suffix(".wav")
+                    .context("create corrected wav")?;
+                let script = psola_retarget_script(&current, target_csv.path(), corrected.path());
+                run_inline(&praat_cfg, &script, &[])?;
+                current = corrected.path().to_path_buf();
+                tmp_wavs.push(corrected);
+            }
+
+            fs_err::copy(&current, &out)?;
+            println!("{}", out.display());
             Ok(())
         }
     }
@@ -539,7 +735,7 @@ fn dispatch_pitch(c: PitchCmd) -> Result<()> {
 }
 
 fn dispatch_vad(c: VadCmd) -> Result<()> {
-    use nadir_vad::{detect_segments, VadConfig};
+    use nadir_vad::{detect_onsets, detect_segments, split_segments, VadConfig};
     match c.sub {
         VadSub::Segments { in_wav, threshold } => {
             let cfg = VadConfig {
@@ -551,18 +747,20 @@ fn dispatch_vad(c: VadCmd) -> Result<()> {
             Ok(())
         }
         VadSub::Split { in_wav, out_dir } => {
-            println!(
-                "vad split stub — in={} out={}",
-                in_wav.display(),
-                out_dir.display()
-            );
+            let cfg = VadConfig::default();
+            let paths = split_segments(&cfg, &in_wav, &out_dir)?;
+            for p in &paths {
+                println!("{}", p.display());
+            }
             Ok(())
         }
-        VadSub::Onsets {
-            in_wav,
-            threshold: _,
-        } => {
-            println!("vad onsets stub — in={}", in_wav.display());
+        VadSub::Onsets { in_wav, threshold } => {
+            let cfg = VadConfig {
+                threshold,
+                ..Default::default()
+            };
+            let ons = detect_onsets(&cfg, &in_wav, None)?;
+            println!("{}", serde_json::to_string_pretty(&ons)?);
             Ok(())
         }
     }
@@ -630,11 +828,17 @@ fn dispatch_feat(c: FeatCmd) -> Result<()> {
             Ok(())
         }
         FeatSub::Audit { in_wav, target_csv } => {
-            println!(
-                "feat audit stub — in={} target={}",
-                in_wav.display(),
-                target_csv.display()
-            );
+            use nadir_feat::{parse_f0_track, rms_cents};
+            let cfg = SmileConfig::default();
+            let tmp = tempfile::NamedTempFile::with_suffix(".csv")
+                .context("create temp csv")?;
+            extract_csv(&cfg, FeatureSet::EGeMAPSv02, &in_wav, tmp.path())?;
+            let realized_text = fs_err::read_to_string(tmp.path())?;
+            let realized = parse_f0_track(&realized_text);
+            let target_text = fs_err::read_to_string(&target_csv)?;
+            let target = parse_f0_track(&target_text);
+            let err = rms_cents(&realized, &target);
+            println!("rms_cents: {err:.1}");
             Ok(())
         }
     }

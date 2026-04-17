@@ -126,6 +126,28 @@ def onsets(
     return crossings
 
 
+def split_segments(
+    wav_path: Path,
+    out_dir: Path,
+    threshold: float = 0.3,
+    min_speech_ms: int = 60,
+    min_silence_ms: int = 100,
+) -> list[Path]:
+    """Write each speech segment to out_dir/{n:03}.wav. Returns paths written."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    segs = segments(wav_path, threshold=threshold,
+                    min_speech_ms=min_speech_ms, min_silence_ms=min_silence_ms)
+    audio, sr = sf.read(str(wav_path), dtype="int16", always_2d=False)
+    written: list[Path] = []
+    for i, s in enumerate(segs):
+        start = int(s.start_s * sr)
+        end = int(s.end_s * sr)
+        p = out_dir / f"{i:03}.wav"
+        sf.write(str(p), audio[start:end], sr, subtype="PCM_16")
+        written.append(p)
+    return written
+
+
 def segments_as_json(segs: list[Segment]) -> list[dict]:
     return [asdict(s) for s in segs]
 

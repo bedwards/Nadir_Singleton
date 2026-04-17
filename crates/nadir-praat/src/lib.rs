@@ -49,11 +49,6 @@ pub fn tool_version(bin: &Path) -> Result<String> {
 pub fn psola_retarget_script(in_wav: &Path, pitch_csv: &Path, out_wav: &Path) -> String {
     format!(
         r#"# nadir-praat: PSOLA retarget
-form PSOLA
-    sentence InputWav {in_wav}
-    sentence PitchCsv {pitch_csv}
-    sentence OutputWav {out_wav}
-endform
 Read from file: "{in_wav}"
 name$ = selected$("Sound")
 To Manipulation: 0.01, 75, 600
@@ -81,6 +76,28 @@ Save as WAV file: "{out_wav}"
     )
 }
 
+/// Extract per-frame F0 track from a WAV via Praat SHS pitch analysis.
+/// Returns a CSV with `time_s,hz` — unvoiced frames are omitted (hz==0 skipped).
+pub fn extract_f0_script(in_wav: &Path, out_csv: &Path) -> String {
+    format!(
+        r#"# nadir-praat: F0 extraction
+Read from file: "{in_wav}"
+To Pitch (ac): 0.01, 75, 15, 0, 0.03, 0.45, 0.01, 0.35, 0.14, 600
+writeFileLine: "{out_csv}", "time_s,hz"
+frames = Get number of frames
+for i from 1 to frames
+    t = Get time from frame number: i
+    h = Get value in frame: i, "Hertz"
+    if h <> undefined
+        appendFileLine: "{out_csv}", fixed$(t, 4) + "," + fixed$(h, 3)
+    endif
+endfor
+"#,
+        in_wav = in_wav.display(),
+        out_csv = out_csv.display(),
+    )
+}
+
 /// Write a script to a tempfile and run it.
 pub fn run_inline(cfg: &PraatConfig, script_body: &str, args: &[String]) -> Result<String> {
     let mut tf = tempfile::NamedTempFile::new()?;
@@ -104,5 +121,7 @@ mod tests {
         assert!(s.contains("To Manipulation"));
         assert!(s.contains("Replace pitch tier"));
         assert!(s.contains("overlap-add"));
+        // No form block — paths baked via Rust string interpolation
+        assert!(!s.contains("form "), "form block would require CLI args");
     }
 }
