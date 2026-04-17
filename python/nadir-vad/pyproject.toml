@@ -7,10 +7,19 @@ authors = [{ name = "Nadir_Singleton" }]
 license = { text = "MIT" }
 dependencies = [
     "silero-vad>=5.1",
-    "numpy>=1.26",
     "soundfile>=0.12",
-    "torch>=2.6",
-    "torchaudio>=2.6",
+    # numpy: the open-ended arm64/Linux path picks up the latest 2.x. On
+    # Darwin x86_64 we're pinned to torch 2.2.x (see below), which was built
+    # against numpy < 2 and cannot import a numpy 2.x C-API — cap accordingly.
+    "numpy>=1.26; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "numpy>=1.26,<2.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # torch/torchaudio: lower bound relaxed to 2.2 so Darwin x86_64 can resolve
+    # (last upstream wheel for that platform is torch 2.2.2). Upper bound stays
+    # open for arm64 Mac / Linux, which still pick up 2.6+ automatically.
+    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torchaudio>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torchaudio>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [project.optional-dependencies]

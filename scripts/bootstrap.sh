@@ -6,10 +6,12 @@
 # already in place.
 #
 # csdr fork selection (see research/csdr.md and tools/VERSIONS.toml):
-#   Darwin arm64          → jketterl/csdr  (clean C++/CMake, Apple Silicon)
-#   Darwin x86_64         → ha7ilm/csdr    (older Apple clang can't build jketterl)
+#   Darwin (all arches)   → ha7ilm/csdr    (command surface matches nadir-dsp)
 #   Linux any             → ha7ilm/csdr    (matches the CI verifier)
-#   Override: NADIR_CSDR_FORK=jketterl|ha7ilm forces a fork.
+#   Override: NADIR_CSDR_FORK=jketterl|ha7ilm forces a fork. When the
+#   override selects jketterl on Darwin x86_64 the bootstrap auto-applies
+#   scripts/patches/csdr-jketterl-macos-x86_64.patch (shm_open/mmap for
+#   mremap, sincosf shim, VLA→std::vector in exec.cpp).
 #
 # Target bash 3.2+ so macOS system bash works. POSIX-ish where possible.
 
@@ -133,8 +135,12 @@ select_csdr_fork() {
         printf '%s' "$NADIR_CSDR_FORK"
         return
     fi
-    # jketterl uses mremap (Linux-only) in ringbuffer.cpp; fails on all Darwin.
-    # ha7ilm has GCC-specific Makefile flags but bootstrap patches those for Darwin.
+    # We default to ha7ilm on every host because nadir-dsp's preset command
+    # names (convert_s16_f, fir_interpolate_cc, bandpass_fir_fft_cc, …) come
+    # from the ha7ilm CLI surface. The jketterl fork is supported as an opt-in
+    # via NADIR_CSDR_FORK=jketterl — on Darwin x86_64 it additionally needs
+    # scripts/patches/csdr-jketterl-macos-x86_64.patch to build against Apple
+    # clang (no mremap, no portable sincosf, no VLA).
     case "$uname_s/$uname_m" in
         Darwin/*)       printf 'ha7ilm' ;;
         Linux/*)        printf 'ha7ilm' ;;
@@ -171,13 +177,25 @@ build_csdr_jketterl() {
         && cmake "$SRC/csdr-jketterl" -DCMAKE_BUILD_TYPE=Release \
         && make -j"$JOBS")
 
-    # The canonical binary lives under src/csdr-cli/ but older cuts put it at
-    # the build root; accept either.
+    # The canonical binary has lived under a few names/paths across jketterl
+    # cuts: src/apps/csdr/csdr (current master), src/csdr-cli/csdr (older),
+    # and sometimes the build root. Accept any of them.
     for cand in \
+        "$BUILD/csdr-jketterl/src/apps/csdr/csdr" \
         "$BUILD/csdr-jketterl/src/csdr-cli/csdr" \
         "$BUILD/csdr-jketterl/csdr"; do
         if [ -x "$cand" ]; then
             cp "$cand" "$BIN/csdr"
+            # Install libcsdr.dylib alongside the binary so a PATH-based
+            # launch finds it without extra DYLD_LIBRARY_PATH wiring.
+            for lib in \
+                "$BUILD/csdr-jketterl/src/lib/libcsdr.dylib" \
+                "$BUILD/csdr-jketterl/libcsdr.dylib"; do
+                if [ -f "$lib" ]; then
+                    cp "$lib" "$BIN/"
+                    break
+                fi
+            done
             log "we installed csdr (jketterl) at $BIN/csdr"
             return 0
         fi

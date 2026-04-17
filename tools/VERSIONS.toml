@@ -25,17 +25,17 @@ git_ref = "master"
 version = "5.1+"
 source = "pypi:silero-vad"
 
-# csdr fork choice is platform-sensitive.
+# csdr fork choice.
 #
-# The jketterl fork is the canonical modern target (C++17, CMake, multi-call
-# binary, libsamplerate resampling) and builds cleanly on macOS arm64 with
-# recent Apple clang. On Darwin x86_64 with macOS 26's Apple clang 16 the
-# jketterl build has produced C++ errors in src/lib/exec.cpp and
-# src/lib/ringbuffer.cpp (missing implicit <cstdint>/<cstring> includes).
-# Rather than carry a fragile patch against upstream master, on that host and
-# on Linux CI we fall back to ha7ilm's original pure-C Makefile build. The
-# command surface overlaps enough for our graph DSL — see research/csdr.md
-# for the fork-drift caveats.
+# Default on every platform is ha7ilm/csdr: its pure-C Makefile build matches
+# the ha7ilm-suffixed command names baked into nadir-dsp's presets
+# (convert_s16_f, fir_interpolate_cc, bandpass_fir_fft_cc, …). The modern
+# jketterl fork renames those blocks and is supported as an opt-in via
+# NADIR_CSDR_FORK=jketterl. On Darwin x86_64 the jketterl path additionally
+# applies scripts/patches/csdr-jketterl-macos-x86_64.patch, which
+# substitutes shm_open+mmap for the Linux mremap ring-buffer trick, provides
+# a sincosf shim, and swaps a VLA in exec.cpp for std::vector — all under
+# `#ifdef __APPLE__`. See research/csdr.md for the fork-drift caveats.
 #
 # Override at bootstrap time with NADIR_CSDR_FORK=jketterl|ha7ilm.
 
@@ -47,10 +47,10 @@ linux_fork = "ha7ilm"
 source = "https://github.com/jketterl/csdr"
 git_ref = "master"
 build = "cmake"
-platforms = ["darwin-arm64"]
+platforms = ["darwin-arm64", "darwin-x86_64"]
 
 [csdr.fork.ha7ilm]
 source = "https://github.com/ha7ilm/csdr"
 git_ref = "master"
 build = "make"
-platforms = ["darwin-x86_64", "linux-x86_64", "linux-aarch64"]
+platforms = ["linux-x86_64", "linux-aarch64"]
