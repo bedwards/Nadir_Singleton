@@ -654,6 +654,10 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             struct DspFields {
                 #[serde(default)]
                 bed_preset: Option<String>,
+                /// Stack multiple bed presets (layered noise + tonal drone etc).
+                /// If set, takes precedence over bed_preset.
+                #[serde(default)]
+                bed_presets: Option<Vec<String>>,
                 #[serde(default = "default_bed_gain")]
                 bed_gain: f32,
                 #[serde(default = "default_vocal_gain")]
@@ -792,6 +796,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             let mut dsp_cfg = m.dsp.unwrap_or(DspFields {
                 bed_preset: None,
+                bed_presets: None,
                 bed_gain: default_bed_gain(),
                 vocal_gain: default_vocal_gain(),
                 pulses: default_pulse(),
@@ -1060,8 +1065,16 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let bed_path = stems_dir.join("bed.wav");
             let pulses_path = stems_dir.join("pulses.wav");
 
-            let mut bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
-                let mut raw = match nadir_render::resolve_bed(name) {
+            // Resolve which preset names to stack. bed_presets list wins if set,
+            // else single bed_preset, else none.
+            let preset_names: Vec<String> = match (&dsp_cfg.bed_presets, &dsp_cfg.bed_preset) {
+                (Some(list), _) if !list.is_empty() => list.clone(),
+                (_, Some(name)) => vec![name.clone()],
+                _ => Vec::new(),
+            };
+            let mut bed: Option<Vec<f32>> = None;
+            for name in &preset_names {
+                let sub: Option<Vec<f32>> = match nadir_render::resolve_bed(name) {
                     Some(nadir_render::BedKind::ShapedNoise { low, high, tilt }) => {
                         Some(nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?)
                     }
@@ -1072,19 +1085,29 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                         Some(nadir_render::band_limit_via_csdr(&b, low, high, 0.02).unwrap_or(b))
                     }
                     None => {
-                        tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
+                        tracing::warn!(bed_preset=%name, "unknown bed preset, skipping");
                         None
                     }
                 };
-                if let Some(ref mut b) = raw {
-                    // Slow breath tremolo at 0.22 Hz, 30% depth — gives the bed life.
-                    nadir_render::amp_tremolo(b, 0.22, 0.30);
-                    nadir_render::f32_to_wav_s16(b, nadir_render::MASTER_SR, &bed_path)?;
+                if let Some(s) = sub {
+                    bed = match bed {
+                        None => Some(s),
+                        Some(mut acc) => {
+                            let n = acc.len().max(s.len());
+                            acc.resize(n, 0.0);
+                            for (i, v) in s.iter().enumerate() {
+                                acc[i] += v;
+                            }
+                            Some(acc)
+                        }
+                    };
                 }
-                raw
-            } else {
-                None
-            };
+            }
+            if let Some(ref mut b) = bed {
+                // Slow breath tremolo at 0.22 Hz, 30% depth — gives the bed life.
+                nadir_render::amp_tremolo(b, 0.22, 0.30);
+                nadir_render::f32_to_wav_s16(b, nadir_render::MASTER_SR, &bed_path)?;
+            }
 
             // Returns Vec<(samples, pan)> — one entry if pingpong off, two if on.
             let mut pulse_stems: Vec<(Vec<f32>, f32)> = if dsp_cfg.pulses {

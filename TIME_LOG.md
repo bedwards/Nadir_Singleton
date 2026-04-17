@@ -257,11 +257,20 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-16:19:23→16:20:38  feat(cli): render files named <NN_slug>.wav, not render.wav
+16:19:23→16:20:38  PR#100 feat(cli): render files named <NN_slug>.wav, not render.wav
   estimate: 1.0 min    actual: 1.25 min    delta: +0.25
   user-observable: albums/01_horizon_salts/01_first_salt/01_first_salt.wav
   (systematic per track). Legacy render.wav still read as fallback so older
   renders keep working.
+```
+
+```
+16:22:50→16:24:45  feat(render): stacked bed presets (drone + noise)
+  estimate: 2.5 min    actual: 1.92 min    delta: -0.58
+  user-observable: [dsp].bed_presets list stacks multiple bed synths (e.g.
+  tonal_drone_triad + band_limit_80_3200). Album 01 manifests updated so every
+  track has a tonal pitch anchor layered under the noise color. "bed.wav is
+  just noise" complaint addressed.
 ```
 
 ## rules of thumb (v0.1)

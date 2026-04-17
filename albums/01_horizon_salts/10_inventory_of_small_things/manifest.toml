@@ -22,6 +22,6 @@ pitch_error_ceiling_cents = 2.0
 vox_loudness_lufs = -14.0
 
 [dsp]
-bed_preset = "band_limit_80_3200"
+bed_presets = ["tonal_drone_triad", "band_limit_80_3200"]
 texture_preset = "shaped_noise_dawn"
 sample_source = "klatt_texture"
