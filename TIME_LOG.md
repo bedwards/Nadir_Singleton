@@ -124,9 +124,15 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-09:57:24→09:58:04  feat(compose): vibrato on long notes (≥300 ms, ±25¢ ~5 Hz)
+09:57:24→09:58:04  PR#65 feat(compose): vibrato on long notes (≥300 ms, ±25¢ ~5 Hz)
   estimate: 1.0 min (post-calibration)    actual: 0.67 min    delta: -0.33
   user-observable: held notes shimmer with classical-style vibrato
+```
+
+```
+09:58:49→09:59:24  fix(compose): vibrato rate stable at ~5 Hz regardless of note length
+  estimate: 1.0 min    actual: 0.58 min    delta: -0.42
+  user-observable: vibrato no longer speeds up on short held notes
 ```
 
 ## rules of thumb (v0.1)
