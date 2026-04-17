@@ -140,6 +140,57 @@ pub fn bed_shaped_noise(duration_s: f32, low: f32, high: f32, tilt: f32) -> Resu
     Ok(samples)
 }
 
+/// Synthesize a pulse track at `onsets_s` (seconds). Each pulse = noise burst of
+/// `pulse_ms` with a cos^2 attack/release envelope at 48 kHz. Used as a
+/// percussive accompaniment driven by vocal onsets.
+pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) -> Vec<f32> {
+    let sr = MASTER_SR as f32;
+    let n = (duration_s * sr).ceil() as usize;
+    let mut out = vec![0.0f32; n];
+    let plen = ((pulse_ms as f32 / 1000.0) * sr) as usize;
+    let mut rng = seed;
+    let mut rand01 = || {
+        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        ((rng >> 33) as f32) / ((1u32 << 31) as f32) * 2.0 - 1.0
+    };
+    for &t in onsets_s {
+        let start = (t * sr) as usize;
+        for i in 0..plen {
+            let idx = start + i;
+            if idx >= n {
+                break;
+            }
+            let u = i as f32 / plen as f32;
+            let env = (std::f32::consts::PI * u).sin().powi(2);
+            out[idx] += 0.6 * env * rand01();
+        }
+    }
+    out
+}
+
+/// Band-limit a raw f32 48 kHz mono stream through csdr
+/// (shift_addition_fc 0.0 | bandpass_fir_fft_cc low high tbw | realpart_cf).
+pub fn band_limit_via_csdr(samples: &[f32], low: f32, high: f32, tbw: f32) -> Result<Vec<f32>> {
+    let tmp_in = tempfile::NamedTempFile::with_suffix(".f32")?;
+    f32_to_raw(samples, tmp_in.path())?;
+    let g = nadir_dsp::Graph {
+        in_sr: MASTER_SR,
+        out_sr: MASTER_SR,
+        bin: "csdr".into(),
+        stages: vec![
+            nadir_dsp::Stage::new("shift_addition_fc").arg("0.0"),
+            nadir_dsp::Stage::new("bandpass_fir_fft_cc")
+                .arg(format!("{low}"))
+                .arg(format!("{high}"))
+                .arg(format!("{tbw}")),
+            nadir_dsp::Stage::new("realpart_cf"),
+        ],
+    };
+    let tmp_out = tempfile::NamedTempFile::with_suffix(".f32")?;
+    g.run_files(tmp_in.path(), tmp_out.path())?;
+    raw_to_f32(tmp_out.path())
+}
+
 /// Mix vocal (16 kHz WAV) + bed (48 kHz f32 samples) to a 48 kHz mono s16 WAV.
 /// Vocal is first upsampled via csdr; then vocal_gain * vocal + bed_gain * bed.
 pub fn mix_vocal_plus_bed_to_wav(
@@ -149,20 +200,38 @@ pub fn mix_vocal_plus_bed_to_wav(
     bed_gain: f32,
     out_wav: &Path,
 ) -> Result<PathBuf> {
+    mix_stems_to_wav(vocal_wav_16k, &[(bed_48k, bed_gain)], vocal_gain, out_wav)
+}
+
+/// General stem mixer. Vocal is upsampled via csdr. Each `(stem, gain)` is mixed in at 48 kHz.
+pub fn mix_stems_to_wav(
+    vocal_wav_16k: &Path,
+    stems: &[(&[f32], f32)],
+    vocal_gain: f32,
+    out_wav: &Path,
+) -> Result<PathBuf> {
     let vocal_48k = upsample_16_to_48_via_csdr(vocal_wav_16k)?;
-    let n = vocal_48k.len().max(bed_48k.len());
-    let mut mixed = Vec::with_capacity(n);
-    for i in 0..n {
-        let v = vocal_48k.get(i).copied().unwrap_or(0.0);
-        let b = bed_48k.get(i).copied().unwrap_or(0.0);
-        mixed.push(vocal_gain * v + bed_gain * b);
+    let mut n = vocal_48k.len();
+    for (s, _) in stems {
+        n = n.max(s.len());
     }
-    // Simple peak normalization if clipping
+    let mut mixed = vec![0.0f32; n];
+    for (i, v) in vocal_48k.iter().enumerate() {
+        mixed[i] += vocal_gain * v;
+    }
+    for (stem, g) in stems {
+        for (i, v) in stem.iter().enumerate() {
+            if i >= n {
+                break;
+            }
+            mixed[i] += g * v;
+        }
+    }
     let peak = mixed.iter().fold(0.0f32, |a, &x| a.max(x.abs()));
     if peak > 0.99 {
-    let g = 0.99 / peak;
-        for s in &mut mixed {
-            *s *= g;
+        let s = 0.99 / peak;
+        for m in &mut mixed {
+            *m *= s;
         }
     }
     f32_to_wav_s16(&mixed, MASTER_SR, out_wav)?;

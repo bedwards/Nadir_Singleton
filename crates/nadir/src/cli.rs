@@ -442,12 +442,21 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 bed_gain: f32,
                 #[serde(default = "default_vocal_gain")]
                 vocal_gain: f32,
+                #[serde(default = "default_pulse")]
+                pulses: bool,
+                #[serde(default = "default_pulse_gain")]
+                pulse_gain: f32,
+                #[serde(default = "default_pulse_ms")]
+                pulse_ms: u32,
             }
             fn default_bpm() -> f32 { 96.0 }
             fn default_voice() -> String { "us1".into() }
             fn default_seed() -> u64 { 42 }
             fn default_bed_gain() -> f32 { 0.35 }
             fn default_vocal_gain() -> f32 { 0.9 }
+            fn default_pulse() -> bool { true }
+            fn default_pulse_gain() -> f32 { 0.45 }
+            fn default_pulse_ms() -> u32 { 25 }
             #[derive(Deserialize)]
             struct FullManifest {
                 track: TrackFields,
@@ -479,6 +488,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 bed_preset: None,
                 bed_gain: default_bed_gain(),
                 vocal_gain: default_vocal_gain(),
+                pulses: default_pulse(),
+                pulse_gain: default_pulse_gain(),
+                pulse_ms: default_pulse_ms(),
             });
             let lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
                 .unwrap_or_default()
@@ -563,29 +575,67 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 run_inline(&praat_cfg, &script, &[])?;
             }
 
-            // ── bed + mix ──
+            // ── bed + pulses + mix ──
             let vocal_info = hound::WavReader::open(&tuned_vox_path)?;
             let dur_s = vocal_info.duration() as f32 / vocal_info.spec().sample_rate as f32;
             drop(vocal_info);
 
-            let bed_path_opt = stems_dir.join("bed.wav");
-            if let Some(name) = dsp_cfg.bed_preset.as_deref() {
+            let bed_path = stems_dir.join("bed.wav");
+            let pulses_path = stems_dir.join("pulses.wav");
+
+            let bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
                 if let Some((low, high, tilt)) = nadir_render::resolve_bed_preset(name) {
-                    let bed = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
-                    nadir_render::f32_to_wav_s16(&bed, nadir_render::MASTER_SR, &bed_path_opt)?;
-                    nadir_render::mix_vocal_plus_bed_to_wav(
-                        &tuned_vox_path,
-                        &bed,
-                        dsp_cfg.vocal_gain,
-                        dsp_cfg.bed_gain,
-                        &dest,
-                    )?;
+                    let b = nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?;
+                    nadir_render::f32_to_wav_s16(&b, nadir_render::MASTER_SR, &bed_path)?;
+                    Some(b)
                 } else {
                     tracing::warn!(bed_preset=%name, "unknown bed preset, skipping bed");
-                    fs_err::copy(&tuned_vox_path, &dest)?;
+                    None
                 }
             } else {
+                None
+            };
+
+            let pulses = if dsp_cfg.pulses {
+                use nadir_vad::{detect_onsets, VadConfig};
+                let vad_cfg = VadConfig::default();
+                match detect_onsets(&vad_cfg, &tuned_vox_path, Some(m.track.bpm)) {
+                    Ok(onsets) => {
+                        let times: Vec<f32> = onsets.iter().map(|o| o.time_s).collect();
+                        let raw = nadir_render::pulse_track(&times, dur_s, dsp_cfg.pulse_ms, m.track.seed);
+                        // Band-limit around 200-2000 Hz (voice-pocket percussive)
+                        let low = 200.0 / nadir_render::MASTER_SR as f32;
+                        let high = 2000.0 / nadir_render::MASTER_SR as f32;
+                        let shaped = nadir_render::band_limit_via_csdr(&raw, low, high, 0.01)
+                            .unwrap_or(raw);
+                        nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &pulses_path)?;
+                        Some(shaped)
+                    }
+                    Err(e) => {
+                        tracing::warn!(error=%e, "vad onsets failed, skipping pulses");
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
+            let mut stems: Vec<(&[f32], f32)> = Vec::new();
+            if let Some(ref b) = bed {
+                stems.push((b.as_slice(), dsp_cfg.bed_gain));
+            }
+            if let Some(ref p) = pulses {
+                stems.push((p.as_slice(), dsp_cfg.pulse_gain));
+            }
+            if stems.is_empty() {
                 fs_err::copy(&tuned_vox_path, &dest)?;
+            } else {
+                nadir_render::mix_stems_to_wav(
+                    &tuned_vox_path,
+                    &stems,
+                    dsp_cfg.vocal_gain,
+                    &dest,
+                )?;
             }
 
             println!("{}", dest.display());
