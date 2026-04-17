@@ -1,0 +1,38 @@
+[track]
+n = 2
+slug = "02_a_glove"
+title = "A Glove"
+key = "D"
+scale = "dorian"
+bpm = 60
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a single leather glove left on a bench; who, where, when, not asked"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["10_the_coat_hook", "15_the_folded_map"]
+
+[targets]
+tessitura_hz = [150, 340]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "formant_shift.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 900
+very_accurate = true
+formant_shift_ratio = 0.92
+target_median_hz = 195
+range_factor = 0.80
+duration_factor = 1.05

@@ -1,0 +1,38 @@
+[track]
+n = 8
+slug = "08_the_unopened_letter"
+title = "The Unopened Letter"
+key = "B"
+scale = "minor"
+bpm = 52
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a letter we have not opened, and maybe never will; reprise of album 04's letter_cadence"
+motifs = ["m.whisper_psola", "m.letter_cadence"]
+carries = ["art-song-whisper"]
+seeds_for = ["16_the_small_hours"]
+
+[targets]
+tessitura_hz = [150, 330]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "duration_warp.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 950
+very_accurate = true
+formant_shift_ratio = 1.00
+target_median_hz = 195
+range_factor = 0.70
+final_silence_ms = 2200

@@ -1,0 +1,37 @@
+[track]
+n = 4
+slug = "04_kitchen_scale"
+title = "Kitchen Scale"
+key = "E"
+scale = "phrygian"
+bpm = 58
+meter = [4, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "weighing out small amounts of flour; the domestic as devotion"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["09_a_kettle_on_low", "11_reading_glasses"]
+
+[targets]
+tessitura_hz = [155, 345]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 70
+pitch_ceiling_hz = 1000
+very_accurate = true
+formant_shift_ratio = 1.04
+target_median_hz = 205
+range_factor = 0.72

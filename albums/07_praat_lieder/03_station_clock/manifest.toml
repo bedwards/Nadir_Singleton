@@ -1,0 +1,37 @@
+[track]
+n = 3
+slug = "03_station_clock"
+title = "Station Clock"
+key = "A"
+scale = "minor"
+bpm = 50
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the clock above an empty platform; we are neither arriving nor leaving"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["09_a_kettle_on_low", "16_the_small_hours"]
+
+[targets]
+tessitura_hz = [140, 310]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "cc"
+pitch_floor_hz = 60
+pitch_ceiling_hz = 900
+very_accurate = true
+formant_shift_ratio = 1.00
+target_median_hz = 180
+range_factor = 0.60

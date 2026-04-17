@@ -1,0 +1,37 @@
+[track]
+n = 7
+slug = "07_a_spoon_of_salt"
+title = "A Spoon of Salt"
+key = "A"
+scale = "minor"
+bpm = 56
+meter = [4, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "we return the salt to the hand; a reprise of the album 01 utterance in lied form"
+motifs = ["m.whisper_psola", "m.dawn_utterance"]
+carries = ["art-song-whisper"]
+seeds_for = ["13_a_thimble", "14_an_empty_glass"]
+
+[targets]
+tessitura_hz = [155, 345]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 1000
+very_accurate = true
+formant_shift_ratio = 1.00
+target_median_hz = 215
+range_factor = 0.70
