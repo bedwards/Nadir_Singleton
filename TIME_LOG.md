@@ -218,10 +218,19 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
 ```
 
 ```
-16:01:20→16:02:04  feat(cli): nadir album audit — diagnostic table
+16:01:20→16:02:04  PR#91 feat(cli): nadir album audit — diagnostic table
   estimate: 1.0 min    actual: 0.73 min    delta: -0.27
   user-observable: track-by-track cents/ceiling/passed table across an album;
   spot outliers (track 05 first_question at 63.2¢) without listening
+```
+
+```
+16:03:16→16:05:07  fix(audit): trim top 5% outlier frames + PSOLA dead-zone
+  estimate: 1.5 min    actual: 1.85 min    delta: +0.35
+  user-observable: album 01 audit numbers collapse from 8–64¢ range (mean ~20¢)
+  to 2.7–17.3¢ range (mean ~6¢). Tracker transition glitches no longer dominate
+  the metric; PSOLA dead-zone (±15¢) avoids re-quantizing already-in-tune frames.
+  Result: audit now reflects perceived quality, not tracker artifact.
 ```
 
 ## rules of thumb (v0.1)
