@@ -1,0 +1,35 @@
+[track]
+n = 2
+slug = "02_patterned_drizzle"
+title = "Patterned Drizzle"
+key = "A"
+scale = "minor"
+bpm = 96
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "first drops; a dirac-click bed paced in 16th-note patterns; answer to the opener's calm"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "impulse_rhythm"]
+seeds_for = ["08_phase_hail", "13_dirac_sleet"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -18.0
+spectral_slope_db_per_oct_target = -6.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+bed_variation = "dirac_impulse_bed_drizzle_16th"
+texture_preset = "shaped_noise_bed"
+texture_variation = "shaped_noise_bed_mid"
+sample_source = "fir_cascade"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

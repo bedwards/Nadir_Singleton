@@ -9,4 +9,22 @@ palette = "DSP-only beds"
 arc = "weather made entirely of csdr pipes; no voice, only shaped air."
 
 [corpus]
-motifs = []
+motifs = ["m.room_impulse"]
+
+[tracks]
+planned = [
+    "01_morning_fir_calm",
+    "02_patterned_drizzle",
+    "03_low_shelf_rain",
+    "04_pink_snow",
+    "05_band_limit_thunder",
+    "06_dorian_squall",
+    "07_granular_snow",
+    "08_phase_hail",
+    "09_hemlock_fog",
+    "10_ring_mod_gale",
+    "11_fft_mist",
+    "12_deemphasis_dusk",
+    "13_dirac_sleet",
+    "14_room_impulse_night",
+]

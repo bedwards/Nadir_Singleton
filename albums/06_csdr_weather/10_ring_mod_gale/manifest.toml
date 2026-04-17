@@ -1,0 +1,34 @@
+[track]
+n = 10
+slug = "10_ring_mod_gale"
+title = "Ring-Mod Gale"
+key = "D"
+scale = "dorian"
+bpm = 100
+meter = [4, 4]
+bars = 28
+form = "AABA"
+mbrola_voice = ""
+
+[narrative]
+role = "reprise of dorian squall; higher velocity wind; ring-mod carriers now sweep"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "sweeping_carriers"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -15.0
+spectral_slope_db_per_oct_target = -5.0
+voicing_fraction_ceiling = 0.05
+
+[dsp]
+bed_preset = "ring_mod_multi"
+bed_variation = "ring_mod_multi_gale_sweep"
+texture_preset = "shaped_noise_bed"
+texture_variation = "shaped_noise_bed_wind_wide"
+sample_source = "fir_cascade"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

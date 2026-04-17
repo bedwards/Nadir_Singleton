@@ -1,0 +1,1 @@
+# no vocal — album 06 is the DSP-only exception; MBROLA emits a zero-amplitude silence stem

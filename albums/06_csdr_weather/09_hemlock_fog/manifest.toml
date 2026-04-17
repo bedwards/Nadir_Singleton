@@ -1,0 +1,34 @@
+[track]
+n = 9
+slug = "09_hemlock_fog"
+title = "Hemlock Fog"
+key = "A"
+scale = "minor"
+bpm = 40
+meter = [4, 4]
+bars = 40
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "after the hail, a long fog bank; near-static; the album's longest held drone"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "fog_drone"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -23.0
+spectral_slope_db_per_oct_target = -8.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+bed_variation = "shaped_noise_bed_fog_broad"
+texture_preset = "deemphasis_chain"
+texture_variation = "deemphasis_chain_dense_lowmid"
+sample_source = "dirac_impulse_bed_vlong_ir"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

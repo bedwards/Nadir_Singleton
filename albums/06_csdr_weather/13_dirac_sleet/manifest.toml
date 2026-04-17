@@ -1,0 +1,34 @@
+[track]
+n = 13
+slug = "13_dirac_sleet"
+title = "Dirac Sleet"
+key = "A"
+scale = "minor"
+bpm = 88
+meter = [4, 4]
+bars = 24
+form = "AB"
+mbrola_voice = ""
+
+[narrative]
+role = "late-album return of impulse rhythm; colder than drizzle, softer than hail; icy patter"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "sleet_impulse"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -17.0
+spectral_slope_db_per_oct_target = -5.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+bed_variation = "dirac_impulse_bed_sleet_mixed_ir"
+texture_preset = "granular_texture"
+texture_variation = "granular_texture_icy"
+sample_source = "shaped_noise_bed"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

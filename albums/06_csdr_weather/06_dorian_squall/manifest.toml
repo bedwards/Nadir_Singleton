@@ -1,0 +1,35 @@
+[track]
+n = 6
+slug = "06_dorian_squall"
+title = "Dorian Squall"
+key = "D"
+scale = "dorian"
+bpm = 120
+meter = [6, 8]
+bars = 32
+form = "ABA"
+mbrola_voice = ""
+
+[narrative]
+role = "a burst of wind in 6/8; ring-mod carriers tuned to dorian intervals; controlled chaos"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "modal_carriers"]
+seeds_for = ["10_ring_mod_gale"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -15.0
+spectral_slope_db_per_oct_target = -6.0
+voicing_fraction_ceiling = 0.05
+
+[dsp]
+bed_preset = "ring_mod_multi"
+bed_variation = "ring_mod_multi_dorian_carriers"
+texture_preset = "fir_cascade"
+texture_variation = "fir_cascade_wind"
+sample_source = "shaped_noise_bed"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]
