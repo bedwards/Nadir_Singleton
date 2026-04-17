@@ -603,7 +603,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             bed_preset,
             strict,
         } => {
-            use nadir_compose::{plan_melody_phrased, render_vox_pho_phrased};
+            use nadir_compose::{plan_melody_phrased_in_range, render_vox_pho_phrased};
             use nadir_core::{Key, Scale, ScaleKind};
             use nadir_praat::{extract_f0_script, psola_retarget_script, run_inline, PraatConfig};
             use nadir_vox::{synth_to_wav, MbrolaConfig};
@@ -730,6 +730,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 bed_loudness_lufs: Option<f32>,
                 #[serde(default)]
                 pulse_loudness_lufs: Option<f32>,
+                #[serde(default)]
+                tessitura_hz: Option<[f32; 2]>,
             }
             #[derive(Deserialize)]
             struct FullManifest {
@@ -860,7 +862,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let syllables: Vec<String> = lyric.split_whitespace().map(str::to_string).collect();
             let phrase_lens: Vec<usize> = phrases.iter().map(|p| p.len()).collect();
 
-            let notes = plan_melody_phrased(
+            let tessitura: Option<(f32, f32)> = m
+                .targets
+                .as_ref()
+                .and_then(|t| t.tessitura_hz)
+                .map(|[lo, hi]| (lo, hi));
+            let notes = plan_melody_phrased_in_range(
                 &sc,
                 &syllables,
                 &phrase_lens,
@@ -868,6 +875,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 220.0,
                 m.track.bpm,
                 &stresses,
+                tessitura,
             );
             let stream = render_vox_pho_phrased(&notes, &phonemes, &phrase_lens, 30, 400);
 
@@ -973,7 +981,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
                 // Re-plan notes at octave-shifted center
                 let shifted_center = 220.0 * 2f32.powi(sv.octave);
-                let sv_notes = plan_melody_phrased(
+                let sv_notes = plan_melody_phrased_in_range(
                     &sc,
                     &syllables,
                     &phrase_lens,
@@ -981,6 +989,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     shifted_center,
                     m.track.bpm,
                     &stresses,
+                    tessitura,
                 );
                 let sv_stream =
                     render_vox_pho_phrased(&sv_notes, &sv_phonemes, &phrase_lens, 30, 400);
