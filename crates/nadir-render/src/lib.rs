@@ -210,6 +210,18 @@ pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) 
     out
 }
 
+/// Run a raw f32 48 kHz mono stream through the csdr `agc_limit_safe` preset
+/// (fastagc_ff 1024 0.5 | limit_ff 0.98). Returns the processed samples.
+/// Use as a master-bus safety net before writing the final WAV.
+pub fn master_agc_limit(samples: &[f32]) -> Result<Vec<f32>> {
+    let tmp_in = tempfile::NamedTempFile::with_suffix(".f32")?;
+    f32_to_raw(samples, tmp_in.path())?;
+    let g = presets::agc_limit_safe();
+    let tmp_out = tempfile::NamedTempFile::with_suffix(".f32")?;
+    g.run_files(tmp_in.path(), tmp_out.path())?;
+    raw_to_f32(tmp_out.path())
+}
+
 /// Band-limit a raw f32 48 kHz mono stream through csdr
 /// (shift_addition_fc 0.0 | bandpass_fir_fft_cc low high tbw | realpart_cf).
 pub fn band_limit_via_csdr(samples: &[f32], low: f32, high: f32, tbw: f32) -> Result<Vec<f32>> {
@@ -246,6 +258,7 @@ pub fn mix_vocal_plus_bed_to_wav(
 }
 
 /// General stem mixer. Vocal is upsampled via csdr. Each `(stem, gain)` is mixed in at 48 kHz.
+/// The final sum runs through csdr agc_limit_safe (master bus) before WAV write.
 pub fn mix_stems_to_wav(
     vocal_wav_16k: &Path,
     stems: &[(&[f32], f32)],
@@ -269,14 +282,8 @@ pub fn mix_stems_to_wav(
             mixed[i] += g * v;
         }
     }
-    let peak = mixed.iter().fold(0.0f32, |a, &x| a.max(x.abs()));
-    if peak > 0.99 {
-        let s = 0.99 / peak;
-        for m in &mut mixed {
-            *m *= s;
-        }
-    }
-    f32_to_wav_s16(&mixed, MASTER_SR, out_wav)?;
+    let finalized = master_agc_limit(&mixed).unwrap_or(mixed);
+    f32_to_wav_s16(&finalized, MASTER_SR, out_wav)?;
     Ok(out_wav.to_path_buf())
 }
 
