@@ -1,0 +1,28 @@
+[track]
+n = 15
+slug = "15_amen"
+title = "Amen"
+key = "A"
+scale = "minor"
+bpm = 40
+meter = [4, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "closing; a single held /a/ resolves to silence; the album's seed for album 19"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "closing", "amen"]
+reprises = ["m.letter_cadence", "m.dawn_utterance"]
+seeds_for = ["19_singleton_suite"]
+
+[targets]
+tessitura_hz = [140, 220]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -21.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

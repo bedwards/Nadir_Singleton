@@ -1,0 +1,26 @@
+[track]
+n = 6
+slug = "06_sext"
+title = "Sext"
+key = "G"
+scale = "mixolydian"
+bpm = 64
+meter = [4, 4]
+bars = 16
+form = "ABCA"
+mbrola_voice = "us1"
+
+[narrative]
+role = "noon office; three vowels braid at the brightest hour"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "triad of vowels", "noon"]
+
+[targets]
+tessitura_hz = [180, 330]
+pitch_error_ceiling_cents = 2.5
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

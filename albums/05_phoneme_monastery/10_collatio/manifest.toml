@@ -1,0 +1,27 @@
+[track]
+n = 10
+slug = "10_collatio"
+title = "Collatio"
+key = "G"
+scale = "dorian"
+bpm = 56
+meter = [3, 4]
+bars = 18
+form = "duet"
+mbrola_voice = "us1"
+
+[narrative]
+role = "gathering for reading; two voices — us1 and us3 — braid a drone"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "gathering", "two voices"]
+reprises = ["m.feature_vector_waltz"]
+
+[targets]
+tessitura_hz = [150, 310]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

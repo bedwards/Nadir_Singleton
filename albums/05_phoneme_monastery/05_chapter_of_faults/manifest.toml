@@ -1,0 +1,27 @@
+[track]
+n = 5
+slug = "05_chapter_of_faults"
+title = "Chapter of Faults"
+key = "A"
+scale = "aeolian"
+bpm = 48
+meter = [4, 4]
+bars = 20
+form = "verse/response"
+mbrola_voice = "us3"
+
+[narrative]
+role = "confession; each brother names a fault on a whispered drone"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "confession"]
+reprises = ["m.letter_cadence"]
+
+[targets]
+tessitura_hz = [140, 210]
+pitch_error_ceiling_cents = 5.0
+vox_loudness_lufs = -22.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

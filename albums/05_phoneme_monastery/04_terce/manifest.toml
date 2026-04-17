@@ -1,0 +1,26 @@
+[track]
+n = 4
+slug = "04_terce"
+title = "Terce"
+key = "D"
+scale = "phrygian"
+bpm = 58
+meter = [6, 4]
+bars = 12
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "third hour; /u/ is admitted — the brotherhood of three vowels is complete"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "triad of vowels"]
+
+[targets]
+tessitura_hz = [140, 260]
+pitch_error_ceiling_cents = 3.5
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

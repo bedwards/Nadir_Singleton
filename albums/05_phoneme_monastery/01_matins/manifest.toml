@@ -1,0 +1,27 @@
+[track]
+n = 1
+slug = "01_matins"
+title = "Matins"
+key = "A"
+scale = "minor"
+bpm = 44
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the first office; one /a/ breaks the night at 3 a.m. and holds"
+motifs = ["m.vowel_drone", "m.dawn_utterance"]
+carries = ["vowel drones", "chant", "opening"]
+seeds_for = ["03_lauds", "15_amen"]
+
+[targets]
+tessitura_hz = [140, 220]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+texture_preset = "fir_cascade"
+sample_source = "praat_psola"

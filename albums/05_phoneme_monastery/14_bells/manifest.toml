@@ -1,0 +1,27 @@
+[track]
+n = 14
+slug = "14_bells"
+title = "Bells"
+key = "A"
+scale = "minor"
+bpm = 60
+meter = [4, 4]
+bars = 14
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "tower bells ring across the cloister; the day's drones resonate from stone"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "bells", "resonance"]
+reprises = ["m.room_impulse"]
+
+[targets]
+tessitura_hz = [140, 260]
+pitch_error_ceiling_cents = 3.5
+vox_loudness_lufs = -20.0
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+texture_preset = "fir_cascade"
+sample_source = "praat_psola"

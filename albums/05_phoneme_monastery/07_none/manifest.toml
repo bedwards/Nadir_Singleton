@@ -1,0 +1,26 @@
+[track]
+n = 7
+slug = "07_none"
+title = "None"
+key = "A"
+scale = "minor"
+bpm = 56
+meter = [4, 4]
+bars = 14
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "ninth hour; the drone thins; afternoon light slants across the cloister"
+motifs = ["m.vowel_drone"]
+carries = ["chant", "thinning"]
+
+[targets]
+tessitura_hz = [150, 240]
+pitch_error_ceiling_cents = 3.0
+vox_loudness_lufs = -20.5
+
+[dsp]
+bed_preset = "fir_cascade"
+texture_preset = "dirac_impulse_bed"
+sample_source = "praat_psola"

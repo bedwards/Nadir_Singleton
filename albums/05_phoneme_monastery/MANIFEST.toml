@@ -9,4 +9,4 @@ palette = "vowel drones, chant"
 arc = "ritual vowel drones; a brotherhood of /a/, /o/, /u/."
 
 [corpus]
-motifs = []
+motifs = ["m.vowel_drone"]
