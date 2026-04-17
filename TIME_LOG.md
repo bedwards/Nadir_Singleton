@@ -123,6 +123,12 @@ python -c "deltas=[1.2,0.9,5.2,2.7,2.6,3.4,1.8,2.7,2.2,2.3]; import statistics; 
   user-observable: legato glissando between sung notes instead of stepped pitch
 ```
 
+```
+09:57:24→09:58:04  feat(compose): vibrato on long notes (≥300 ms, ±25¢ ~5 Hz)
+  estimate: 1.0 min (post-calibration)    actual: 0.67 min    delta: -0.33
+  user-observable: held notes shimmer with classical-style vibrato
+```
+
 ## rules of thumb (v0.1)
 
 Derived from session 1 only — treat as seed estimates, refine each session.
