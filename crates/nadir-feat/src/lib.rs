@@ -156,6 +156,44 @@ pub fn rms_cents(realized: &[(f32, f32)], target: &[(f32, f32)]) -> f32 {
     (sum / n).sqrt()
 }
 
+/// Fold `realized` frequency to the nearest octave of `target`. Absorbs F0
+/// halving / doubling errors common in pitch trackers (ACF, SHS, etc.) so the
+/// residual reflects actual tuning error rather than octave misassignment.
+pub fn octave_fold(realized: f32, target: f32) -> f32 {
+    if realized <= 0.0 || target <= 0.0 {
+        return realized;
+    }
+    let mut r = realized;
+    while r < target * 0.75 {
+        r *= 2.0;
+    }
+    while r > target * 1.5 {
+        r *= 0.5;
+    }
+    r
+}
+
+/// RMS pitch error in cents, but octave-folded so tracker halving/doubling
+/// is not counted as tuning error. Use for audits against openSMILE when the
+/// tracker is known to octave-slip.
+pub fn rms_cents_octave_folded(realized: &[(f32, f32)], target: &[(f32, f32)]) -> f32 {
+    let n = realized.len().min(target.len()).max(1) as f32;
+    let sum: f32 = realized
+        .iter()
+        .zip(target)
+        .map(|((_, r), (_, t))| {
+            if *r <= 0.0 || *t <= 0.0 {
+                0.0
+            } else {
+                let folded = octave_fold(*r, *t);
+                let c = 1200.0 * (folded / t).ln() / std::f32::consts::LN_2;
+                c * c
+            }
+        })
+        .sum();
+    (sum / n).sqrt()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,5 +215,20 @@ mod tests {
         let t = vec![(0.0, 220.0)];
         let c = rms_cents(&r, &t);
         assert!((c - 100.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn octave_fold_halves() {
+        assert!((octave_fold(110.0, 220.0) - 220.0).abs() < 0.01);
+        assert!((octave_fold(440.0, 220.0) - 220.0).abs() < 0.01);
+        assert!((octave_fold(221.0, 220.0) - 221.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn folded_absorbs_halving() {
+        let r = vec![(0.0, 220.0), (0.01, 110.0)];
+        let t = vec![(0.0, 220.0), (0.01, 220.0)];
+        assert!(rms_cents(&r, &t) > 800.0);
+        assert!(rms_cents_octave_folded(&r, &t) < 1.0);
     }
 }

@@ -750,7 +750,7 @@ fn run_pitch_audit(
     stems_dir: &std::path::Path,
     ceiling_cents: Option<f32>,
 ) -> Result<f32> {
-    use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents, SmileConfig};
+    use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents_octave_folded, SmileConfig};
 
     let smile_cfg = SmileConfig::default();
     let smile_csv = stems_dir.join("opensmile_f0.csv");
@@ -782,7 +782,7 @@ fn run_pitch_audit(
         }
     }
 
-    let rms = rms_cents(&realized_aligned, &target_aligned);
+    let rms = rms_cents_octave_folded(&realized_aligned, &target_aligned);
     let ceiling = ceiling_cents.unwrap_or(30.0);
     let passed = rms <= ceiling;
     let report = serde_json::json!({
