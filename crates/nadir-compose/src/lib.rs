@@ -110,7 +110,8 @@ pub fn render_vox_pho(notes: &[Note], phonemes_per_syl: &[Vec<String>]) -> PhoSt
 /// Phrase-aware variant: `phrase_lens[i]` = number of syllables in phrase i.
 /// Between syllables inside a phrase → `intra_ms` silence. At phrase boundaries
 /// (and after the last phrase) → `breath_ms` silence. Opening/closing silence
-/// = `breath_ms`.
+/// = `breath_ms`. Portamento glides the first phoneme of each in-phrase syllable
+/// from the previous note's pitch to the current, giving a legato line.
 pub fn render_vox_pho_phrased(
     notes: &[Note],
     phonemes_per_syl: &[Vec<String>],
@@ -129,19 +130,32 @@ pub fn render_vox_pho_phrased(
             let phs = &phonemes_per_syl[i];
             let total: u32 = n.dur_ms;
             let per = (total / phs.len().max(1) as u32).max(40);
+            // Previous note's pitch — only within the phrase (phrase boundaries reset)
+            let prev_hz = if k == 0 {
+                None
+            } else {
+                notes.get(i - 1).map(|p| p.hz)
+            };
             for (j, p) in phs.iter().enumerate() {
                 let is_last = j + 1 == phs.len();
+                let is_first = j == 0;
                 let dur = if is_last {
                     total - per * (phs.len() as u32 - 1)
                 } else {
                     per
                 };
+                // First phoneme of an in-phrase syllable starts at previous pitch
+                // and slides to current (10%→90%); others hold current pitch.
+                let (start_hz, end_hz) = match (is_first, prev_hz) {
+                    (true, Some(prev)) => (prev, n.hz),
+                    _ => (n.hz, n.hz),
+                };
                 stream.push(Pho {
                     sampa: p.clone(),
                     dur_ms: dur,
                     pitch: vec![
-                        PitchPoint { pct: 10, hz: n.hz },
-                        PitchPoint { pct: 90, hz: n.hz },
+                        PitchPoint { pct: 10, hz: start_hz },
+                        PitchPoint { pct: 90, hz: end_hz },
                     ],
                 });
             }
@@ -151,9 +165,8 @@ pub fn render_vox_pho_phrased(
             }
         }
         cursor += plen;
-        // Breath between phrases (and after last phrase)
-        let is_last_phrase = p_idx + 1 == phrase_lens.len();
-        stream.push(Pho::silence(if is_last_phrase { breath_ms } else { breath_ms }));
+        let _is_last_phrase = p_idx + 1 == phrase_lens.len();
+        stream.push(Pho::silence(breath_ms));
     }
     stream
 }
