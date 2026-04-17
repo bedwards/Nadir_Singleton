@@ -48,9 +48,7 @@ pub enum Cmd {
     /// Print versions of all five core tools.
     Doctor,
     /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
-    Play {
-        file: PathBuf,
-    },
+    Play { file: PathBuf },
 }
 
 // ─────────── album ───────────
@@ -435,13 +433,19 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             println!("{s}");
             Ok(())
         }
-        AlbumSub::Render { slug, only_with_lyrics, keep_going } => {
+        AlbumSub::Render {
+            slug,
+            only_with_lyrics,
+            keep_going,
+        } => {
             let album_dir = std::path::Path::new("albums").join(&slug);
             let mut tracks: Vec<(u8, std::path::PathBuf)> = Vec::new();
             for entry in fs_err::read_dir(&album_dir)? {
                 let entry = entry?;
                 let path = entry.path();
-                if !path.is_dir() { continue; }
+                if !path.is_dir() {
+                    continue;
+                }
                 let name = entry.file_name();
                 let name = name.to_string_lossy();
                 // Expect NN_slug
@@ -450,7 +454,9 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
                         if only_with_lyrics {
                             let l = path.join("lyric.txt");
                             let txt = fs_err::read_to_string(&l).unwrap_or_default();
-                            if txt.trim().is_empty() { continue; }
+                            if txt.trim().is_empty() {
+                                continue;
+                            }
                         }
                         tracks.push((n, path));
                     }
@@ -464,9 +470,12 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
                 let exe = std::env::current_exe()?;
                 let status = std::process::Command::new(&exe)
                     .args([
-                        "song", "render",
-                        "--album", &slug,
-                        "--track", &n.to_string(),
+                        "song",
+                        "render",
+                        "--album",
+                        &slug,
+                        "--track",
+                        &n.to_string(),
                     ])
                     .status()
                     .context("spawn self for song render")?;
@@ -601,21 +610,51 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 #[serde(default)]
                 secondary_voices: Vec<SecondaryVoice>,
             }
-            fn default_bpm() -> f32 { 96.0 }
-            fn default_voice() -> String { "us1".into() }
-            fn default_seed() -> u64 { 42 }
-            fn default_bed_gain() -> f32 { 0.35 }
-            fn default_vocal_gain() -> f32 { 0.9 }
-            fn default_pulse() -> bool { true }
-            fn default_pulse_gain() -> f32 { 0.45 }
-            fn default_pulse_ms() -> u32 { 25 }
-            fn default_secondary_gain() -> f32 { 0.4 }
-            fn default_pulse_kind() -> String { "noise".into() }
-            fn default_bed_pan() -> f32 { 0.0 }
-            fn default_pulse_pan() -> f32 { 0.0 }
-            fn default_pulse_pingpong() -> bool { true }
-            fn default_pulse_pingpong_width() -> f32 { 0.55 }
-            fn default_echo_on() -> bool { true }
+            fn default_bpm() -> f32 {
+                96.0
+            }
+            fn default_voice() -> String {
+                "us1".into()
+            }
+            fn default_seed() -> u64 {
+                42
+            }
+            fn default_bed_gain() -> f32 {
+                0.35
+            }
+            fn default_vocal_gain() -> f32 {
+                0.9
+            }
+            fn default_pulse() -> bool {
+                true
+            }
+            fn default_pulse_gain() -> f32 {
+                0.45
+            }
+            fn default_pulse_ms() -> u32 {
+                25
+            }
+            fn default_secondary_gain() -> f32 {
+                0.4
+            }
+            fn default_pulse_kind() -> String {
+                "noise".into()
+            }
+            fn default_bed_pan() -> f32 {
+                0.0
+            }
+            fn default_pulse_pan() -> f32 {
+                0.0
+            }
+            fn default_pulse_pingpong() -> bool {
+                true
+            }
+            fn default_pulse_pingpong_width() -> f32 {
+                0.55
+            }
+            fn default_echo_on() -> bool {
+                true
+            }
             fn default_echo_taps() -> Vec<(u32, f32)> {
                 // (delay_ms, gain). Quick comb of small mid-time echoes ≈ hall sense.
                 vec![(187, 0.22), (311, 0.14), (523, 0.09)]
@@ -655,11 +694,21 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let manifest_text = fs_err::read_to_string(track_dir.join("manifest.toml"))?;
             let mut m: FullManifest = toml::from_str(&manifest_text)?;
             // Apply CLI overrides onto manifest fields
-            if let Some(v) = voice.as_ref() { m.track.mbrola_voice = v.clone(); }
-            if let Some(b) = bpm { m.track.bpm = b; }
-            if let Some(k) = key.as_ref() { m.track.key = k.clone(); }
-            if let Some(s) = scale.as_ref() { m.track.scale = s.clone(); }
-            if let Some(sd) = seed { m.track.seed = sd; }
+            if let Some(v) = voice.as_ref() {
+                m.track.mbrola_voice = v.clone();
+            }
+            if let Some(b) = bpm {
+                m.track.bpm = b;
+            }
+            if let Some(k) = key.as_ref() {
+                m.track.key = k.clone();
+            }
+            if let Some(s) = scale.as_ref() {
+                m.track.scale = s.clone();
+            }
+            if let Some(sd) = seed {
+                m.track.seed = sd;
+            }
             let mut dsp_cfg = m.dsp.unwrap_or(DspFields {
                 bed_preset: None,
                 bed_gain: default_bed_gain(),
@@ -677,14 +726,19 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 echo_taps: default_echo_taps(),
                 secondary_voices: Vec::new(),
             });
-            if let Some(bp) = bed_preset.as_ref() { dsp_cfg.bed_preset = Some(bp.clone()); }
-            let raw_lyric = fs_err::read_to_string(track_dir.join("lyric.txt"))
-                .unwrap_or_default();
+            if let Some(bp) = bed_preset.as_ref() {
+                dsp_cfg.bed_preset = Some(bp.clone());
+            }
+            let raw_lyric = fs_err::read_to_string(track_dir.join("lyric.txt")).unwrap_or_default();
             let phrases: Vec<Vec<String>> = raw_lyric
                 .lines()
                 .filter_map(|l| {
                     let words: Vec<String> = l.split_whitespace().map(str::to_string).collect();
-                    if words.is_empty() { None } else { Some(words) }
+                    if words.is_empty() {
+                        None
+                    } else {
+                        Some(words)
+                    }
                 })
                 .collect();
             let lyric = phrases
@@ -704,26 +758,49 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
             // G2P with stress weights
             let g2p_out = Command::new("uv")
-                .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
-                       "--stress", "--voice", &m.track.mbrola_voice, "--text", &lyric])
-                .output().context("g2p spawn")?;
+                .args([
+                    "run",
+                    "--project",
+                    "python/nadir-lyric-g2p",
+                    "nadir-g2p",
+                    "--stress",
+                    "--voice",
+                    &m.track.mbrola_voice,
+                    "--text",
+                    &lyric,
+                ])
+                .output()
+                .context("g2p spawn")?;
             if !g2p_out.status.success() {
                 anyhow::bail!("g2p: {}", String::from_utf8_lossy(&g2p_out.stderr));
             }
             let word_data: Vec<serde_json::Value> = serde_json::from_slice(&g2p_out.stdout)?;
-            let phonemes: Vec<Vec<String>> = word_data.iter()
-                .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
-                    .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+            let phonemes: Vec<Vec<String>> = word_data
+                .iter()
+                .map(|v| {
+                    v["phonemes"]
+                        .as_array()
+                        .unwrap_or(&vec![])
+                        .iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
                 .collect();
-            let stresses: Vec<f32> = word_data.iter()
+            let stresses: Vec<f32> = word_data
+                .iter()
                 .map(|v| v["stress"].as_f64().unwrap_or(1.0) as f32)
                 .collect();
             let syllables: Vec<String> = lyric.split_whitespace().map(str::to_string).collect();
             let phrase_lens: Vec<usize> = phrases.iter().map(|p| p.len()).collect();
 
             let notes = plan_melody_phrased(
-                &sc, &syllables, &phrase_lens,
-                m.track.seed, 220.0, m.track.bpm, &stresses,
+                &sc,
+                &syllables,
+                &phrase_lens,
+                m.track.seed,
+                220.0,
+                m.track.bpm,
+                &stresses,
             );
             let stream = render_vox_pho_phrased(&notes, &phonemes, &phrase_lens, 30, 400);
 
@@ -742,9 +819,15 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             synth_to_wav(&vox_cfg, &stream, &raw_vox_path)?;
 
             let praat_cfg = PraatConfig::default();
-            run_inline(&praat_cfg, &extract_f0_script(&raw_vox_path, &f0_realized_path), &[])?;
+            run_inline(
+                &praat_cfg,
+                &extract_f0_script(&raw_vox_path, &f0_realized_path),
+                &[],
+            )?;
             let f0_text = fs_err::read_to_string(&f0_realized_path)?;
-            let realized: Vec<(f32, f32)> = f0_text.lines().skip(1)
+            let realized: Vec<(f32, f32)> = f0_text
+                .lines()
+                .skip(1)
                 .filter_map(|l| {
                     let mut it = l.split(',');
                     let t: f32 = it.next()?.parse().ok()?;
@@ -780,27 +863,49 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             for sv in &dsp_cfg.secondary_voices {
                 // Re-G2P for this voice (lexicon maps to voice-appropriate phonemes)
                 let sv_g2p = Command::new("uv")
-                    .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
-                           "--stress", "--voice", &sv.voice, "--text", &lyric])
-                    .output().context("g2p spawn (secondary)")?;
+                    .args([
+                        "run",
+                        "--project",
+                        "python/nadir-lyric-g2p",
+                        "nadir-g2p",
+                        "--stress",
+                        "--voice",
+                        &sv.voice,
+                        "--text",
+                        &lyric,
+                    ])
+                    .output()
+                    .context("g2p spawn (secondary)")?;
                 if !sv_g2p.status.success() {
                     tracing::warn!(voice=%sv.voice, err=%String::from_utf8_lossy(&sv_g2p.stderr), "secondary voice g2p failed, skipping");
                     continue;
                 }
                 let sv_words: Vec<serde_json::Value> = serde_json::from_slice(&sv_g2p.stdout)?;
-                let sv_phonemes: Vec<Vec<String>> = sv_words.iter()
-                    .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
-                        .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                let sv_phonemes: Vec<Vec<String>> = sv_words
+                    .iter()
+                    .map(|v| {
+                        v["phonemes"]
+                            .as_array()
+                            .unwrap_or(&vec![])
+                            .iter()
+                            .filter_map(|x| x.as_str().map(str::to_string))
+                            .collect()
+                    })
                     .collect();
 
                 // Re-plan notes at octave-shifted center
                 let shifted_center = 220.0 * 2f32.powi(sv.octave);
                 let sv_notes = plan_melody_phrased(
-                    &sc, &syllables, &phrase_lens,
+                    &sc,
+                    &syllables,
+                    &phrase_lens,
                     m.track.seed.wrapping_add(0xB17AA11A),
-                    shifted_center, m.track.bpm, &stresses,
+                    shifted_center,
+                    m.track.bpm,
+                    &stresses,
                 );
-                let sv_stream = render_vox_pho_phrased(&sv_notes, &sv_phonemes, &phrase_lens, 30, 400);
+                let sv_stream =
+                    render_vox_pho_phrased(&sv_notes, &sv_phonemes, &phrase_lens, 30, 400);
                 let sv_cfg = MbrolaConfig {
                     voice: sv.voice.clone(),
                     ..Default::default()
@@ -814,7 +919,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 let sv_f0_csv = stems_dir.join(format!("f0_realized_{}.csv", sv.voice));
                 run_inline(&praat_cfg, &extract_f0_script(&sv_raw, &sv_f0_csv), &[])?;
                 let sv_f0_text = fs_err::read_to_string(&sv_f0_csv)?;
-                let sv_realized: Vec<(f32, f32)> = sv_f0_text.lines().skip(1)
+                let sv_realized: Vec<(f32, f32)> = sv_f0_text
+                    .lines()
+                    .skip(1)
                     .filter_map(|l| {
                         let mut it = l.split(',');
                         let t: f32 = it.next()?.parse().ok()?;
@@ -887,13 +994,29 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                             let raw = match dsp_cfg.pulse_kind.as_str() {
                                 "tonic" => {
                                     let tonic = sc.degrees_hz(-2).first().copied().unwrap_or(55.0);
-                                    nadir_render::pulse_track_pitched(ts, dur_s, dsp_cfg.pulse_ms.max(60), tonic)
+                                    nadir_render::pulse_track_pitched(
+                                        ts,
+                                        dur_s,
+                                        dsp_cfg.pulse_ms.max(60),
+                                        tonic,
+                                    )
                                 }
-                                _ => nadir_render::pulse_track(ts, dur_s, dsp_cfg.pulse_ms, m.track.seed),
+                                _ => nadir_render::pulse_track(
+                                    ts,
+                                    dur_s,
+                                    dsp_cfg.pulse_ms,
+                                    m.track.seed,
+                                ),
                             };
                             let (low, high) = match dsp_cfg.pulse_kind.as_str() {
-                                "tonic" => (40.0 / nadir_render::MASTER_SR as f32, 500.0 / nadir_render::MASTER_SR as f32),
-                                _ => (200.0 / nadir_render::MASTER_SR as f32, 2000.0 / nadir_render::MASTER_SR as f32),
+                                "tonic" => (
+                                    40.0 / nadir_render::MASTER_SR as f32,
+                                    500.0 / nadir_render::MASTER_SR as f32,
+                                ),
+                                _ => (
+                                    200.0 / nadir_render::MASTER_SR as f32,
+                                    2000.0 / nadir_render::MASTER_SR as f32,
+                                ),
                             };
                             nadir_render::band_limit_via_csdr(&raw, low, high, 0.01).unwrap_or(raw)
                         };
@@ -904,14 +1027,26 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                             // Persist a mixed-down stem for stems/pulses.wav
                             let n = left.len().max(right.len());
                             let mut mono = vec![0.0f32; n];
-                            for (i, v) in left.iter().enumerate() { mono[i] += 0.5 * v; }
-                            for (i, v) in right.iter().enumerate() { mono[i] += 0.5 * v; }
-                            nadir_render::f32_to_wav_s16(&mono, nadir_render::MASTER_SR, &pulses_path)?;
+                            for (i, v) in left.iter().enumerate() {
+                                mono[i] += 0.5 * v;
+                            }
+                            for (i, v) in right.iter().enumerate() {
+                                mono[i] += 0.5 * v;
+                            }
+                            nadir_render::f32_to_wav_s16(
+                                &mono,
+                                nadir_render::MASTER_SR,
+                                &pulses_path,
+                            )?;
                             let w = dsp_cfg.pulse_pingpong_width;
                             vec![(left, -w), (right, w)]
                         } else {
                             let shaped = build(&times);
-                            nadir_render::f32_to_wav_s16(&shaped, nadir_render::MASTER_SR, &pulses_path)?;
+                            nadir_render::f32_to_wav_s16(
+                                &shaped,
+                                nadir_render::MASTER_SR,
+                                &pulses_path,
+                            )?;
                             vec![(shaped, dsp_cfg.pulse_pan)]
                         }
                     }
@@ -934,7 +1069,11 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             for (samples, gain, pan) in &secondary_stems {
                 stems.push((samples.as_slice(), *gain, *pan));
             }
-            let taps: Vec<(u32, f32)> = if dsp_cfg.echo { dsp_cfg.echo_taps.clone() } else { Vec::new() };
+            let taps: Vec<(u32, f32)> = if dsp_cfg.echo {
+                dsp_cfg.echo_taps.clone()
+            } else {
+                Vec::new()
+            };
             if stems.is_empty() && dsp_cfg.vocal_pan == 0.0 && taps.is_empty() {
                 fs_err::copy(&tuned_vox_path, &dest)?;
             } else {
@@ -950,12 +1089,8 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
             // ── openSMILE audit ──
             let ceiling = m.targets.as_ref().and_then(|t| t.pitch_error_ceiling_cents);
-            let audit_result = run_pitch_audit(
-                &tuned_vox_path,
-                &f0_target_path,
-                &stems_dir,
-                ceiling,
-            );
+            let audit_result =
+                run_pitch_audit(&tuned_vox_path, &f0_target_path, &stems_dir, ceiling);
             match audit_result {
                 Ok(rms) => {
                     println!("audit: {rms:.1} cents rms");
@@ -1000,15 +1135,29 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             println!("audit: {rms:.1} cents rms");
             Ok(())
         }
-        SongSub::Listen { album, track, bed_preset, bpm } => {
+        SongSub::Listen {
+            album,
+            track,
+            bed_preset,
+            bpm,
+        } => {
             let exe = std::env::current_exe()?;
             let mut args: Vec<String> = vec![
-                "song".into(), "render".into(),
-                "--album".into(), album.clone(),
-                "--track".into(), track.to_string(),
+                "song".into(),
+                "render".into(),
+                "--album".into(),
+                album.clone(),
+                "--track".into(),
+                track.to_string(),
             ];
-            if let Some(bp) = bed_preset { args.push("--bed-preset".into()); args.push(bp); }
-            if let Some(b) = bpm { args.push("--bpm".into()); args.push(b.to_string()); }
+            if let Some(bp) = bed_preset {
+                args.push("--bed-preset".into());
+                args.push(bp);
+            }
+            if let Some(b) = bpm {
+                args.push("--bpm".into());
+                args.push(b.to_string());
+            }
             let status = std::process::Command::new(&exe).args(&args).status()?;
             if !status.success() {
                 anyhow::bail!("song render failed");
@@ -1050,7 +1199,9 @@ fn run_pitch_audit(
         .filter(|(_, hz)| *hz > 0.0)
         .collect();
     let target_text = fs_err::read_to_string(f0_target_csv)?;
-    let target: Vec<(f32, f32)> = target_text.lines().skip(1)
+    let target: Vec<(f32, f32)> = target_text
+        .lines()
+        .skip(1)
         .filter_map(|l| {
             let mut it = l.split(',');
             let t: f32 = it.next()?.parse().ok()?;
@@ -1063,9 +1214,10 @@ fn run_pitch_audit(
     let mut realized_aligned = Vec::with_capacity(realized.len());
     let mut target_aligned = Vec::with_capacity(realized.len());
     for (t, r) in &realized {
-        if let Some((_, tg)) = target.iter().min_by(|a, b| {
-            (a.0 - *t).abs().partial_cmp(&(b.0 - *t).abs()).unwrap()
-        }) {
+        if let Some((_, tg)) = target
+            .iter()
+            .min_by(|a, b| (a.0 - *t).abs().partial_cmp(&(b.0 - *t).abs()).unwrap())
+        {
             realized_aligned.push((*t, *r));
             target_aligned.push((*t, *tg));
         }
@@ -1086,7 +1238,11 @@ fn run_pitch_audit(
         serde_json::to_string_pretty(&report)?,
     )?;
     if !passed {
-        tracing::warn!(rms_cents = rms, ceiling_cents = ceiling, "pitch audit above ceiling");
+        tracing::warn!(
+            rms_cents = rms,
+            ceiling_cents = ceiling,
+            "pitch audit above ceiling"
+        );
     }
     Ok(rms)
 }
@@ -1147,32 +1303,48 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
 
             // G2P via Python subprocess (with stress weights)
             let g2p_output = Command::new("uv")
-                .args(["run", "--project", "python/nadir-lyric-g2p", "nadir-g2p",
-                       "--stress", "--voice", &voice, "--text", &text])
+                .args([
+                    "run",
+                    "--project",
+                    "python/nadir-lyric-g2p",
+                    "nadir-g2p",
+                    "--stress",
+                    "--voice",
+                    &voice,
+                    "--text",
+                    &text,
+                ])
                 .output()
                 .context("spawn uv for g2p")?;
             if !g2p_output.status.success() {
-                anyhow::bail!("g2p failed: {}", String::from_utf8_lossy(&g2p_output.stderr));
+                anyhow::bail!(
+                    "g2p failed: {}",
+                    String::from_utf8_lossy(&g2p_output.stderr)
+                );
             }
             // JSON: Vec<{phonemes:[str], stress:f32}>
             let word_data: Vec<serde_json::Value> =
                 serde_json::from_slice(&g2p_output.stdout).context("parse g2p json")?;
-            let phonemes_per_word: Vec<Vec<String>> = word_data.iter()
-                .map(|v| v["phonemes"].as_array().unwrap_or(&vec![])
-                    .iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+            let phonemes_per_word: Vec<Vec<String>> = word_data
+                .iter()
+                .map(|v| {
+                    v["phonemes"]
+                        .as_array()
+                        .unwrap_or(&vec![])
+                        .iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
                 .collect();
-            let stresses: Vec<f32> = word_data.iter()
+            let stresses: Vec<f32> = word_data
+                .iter()
                 .map(|v| v["stress"].as_f64().unwrap_or(1.0) as f32)
                 .collect();
 
-            let syllables: Vec<String> = text.split_whitespace()
-                .map(str::to_string)
-                .collect();
+            let syllables: Vec<String> = text.split_whitespace().map(str::to_string).collect();
 
-            let k = Key::from_str(&key)
-                .map_err(|e| anyhow::anyhow!(e))?;
-            let sk = ScaleKind::from_str(&scale)
-                .map_err(|e| anyhow::anyhow!(e))?;
+            let k = Key::from_str(&key).map_err(|e| anyhow::anyhow!(e))?;
+            let sk = ScaleKind::from_str(&scale).map_err(|e| anyhow::anyhow!(e))?;
             let sc = Scale::new(k, sk);
 
             let notes = plan_melody(&sc, &syllables, seed, 220.0, bpm, &stresses);
@@ -1207,13 +1379,15 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
 
             for pass in 0..max_passes {
                 // Extract realized F0 via Praat
-                let f0_csv = tempfile::NamedTempFile::with_suffix(".csv")
-                    .context("create f0 csv")?;
+                let f0_csv =
+                    tempfile::NamedTempFile::with_suffix(".csv").context("create f0 csv")?;
                 let f0_script = extract_f0_script(&current, f0_csv.path());
                 run_inline(&praat_cfg, &f0_script, &[])?;
                 let f0_text = fs_err::read_to_string(f0_csv.path())?;
                 // Parse simple time_s,hz CSV (skip header)
-                let realized: Vec<(f32, f32)> = f0_text.lines().skip(1)
+                let realized: Vec<(f32, f32)> = f0_text
+                    .lines()
+                    .skip(1)
                     .filter_map(|l| {
                         let mut it = l.split(',');
                         let t: f32 = it.next()?.parse().ok()?;
@@ -1228,8 +1402,8 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
                 }
 
                 // Snap each realized frame to nearest scale degree → target CSV
-                let target_csv = tempfile::NamedTempFile::with_suffix(".csv")
-                    .context("create target csv")?;
+                let target_csv =
+                    tempfile::NamedTempFile::with_suffix(".csv").context("create target csv")?;
                 {
                     use std::io::Write;
                     let mut f = std::fs::File::create(target_csv.path())?;
@@ -1243,11 +1417,14 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
                 }
 
                 // RMS cents between realized and snapped target
-                let snapped: Vec<(f32, f32)> = realized.iter()
-                    .map(|(t, hz)| (*t, sc.snap(*hz)))
-                    .collect();
-                let err_before: f32 = if realized.is_empty() { 0.0 } else {
-                    let sum: f32 = realized.iter().zip(snapped.iter())
+                let snapped: Vec<(f32, f32)> =
+                    realized.iter().map(|(t, hz)| (*t, sc.snap(*hz))).collect();
+                let err_before: f32 = if realized.is_empty() {
+                    0.0
+                } else {
+                    let sum: f32 = realized
+                        .iter()
+                        .zip(snapped.iter())
                         .map(|((_, h1), (_, h2))| {
                             let c = 1200.0 * (h1 / h2).ln() / std::f32::consts::LN_2;
                             c * c
@@ -1263,8 +1440,8 @@ fn dispatch_vox(c: VoxCmd) -> Result<()> {
                 }
 
                 // PSOLA retarget
-                let corrected = tempfile::NamedTempFile::with_suffix(".wav")
-                    .context("create corrected wav")?;
+                let corrected =
+                    tempfile::NamedTempFile::with_suffix(".wav").context("create corrected wav")?;
                 let script = psola_retarget_script(&current, target_csv.path(), corrected.path());
                 run_inline(&praat_cfg, &script, &[])?;
                 current = corrected.path().to_path_buf();
@@ -1406,8 +1583,7 @@ fn dispatch_feat(c: FeatCmd) -> Result<()> {
         FeatSub::Audit { in_wav, target_csv } => {
             use nadir_feat::{parse_f0_track, rms_cents};
             let cfg = SmileConfig::default();
-            let tmp = tempfile::NamedTempFile::with_suffix(".csv")
-                .context("create temp csv")?;
+            let tmp = tempfile::NamedTempFile::with_suffix(".csv").context("create temp csv")?;
             extract_csv(&cfg, FeatureSet::EGeMAPSv02, &in_wav, tmp.path())?;
             let realized_text = fs_err::read_to_string(tmp.path())?;
             let realized = parse_f0_track(&realized_text);

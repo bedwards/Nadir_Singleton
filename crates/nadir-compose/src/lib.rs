@@ -14,7 +14,15 @@ pub fn plan_melody(
     bpm: f32,
     stresses: &[f32],
 ) -> Vec<Note> {
-    plan_melody_phrased(scale, syllables, &[syllables.len()], seed, center_hz, bpm, stresses)
+    plan_melody_phrased(
+        scale,
+        syllables,
+        &[syllables.len()],
+        seed,
+        center_hz,
+        bpm,
+        stresses,
+    )
 }
 
 /// Phrase-shaped melody. `phrase_lens[i]` is the number of syllables in phrase i
@@ -54,7 +62,7 @@ pub fn plan_melody_phrased(
         rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
         match (rng_state >> 32) as u32 % 5 {
             0 => -1,
-            1 | 2 | 3 => 0,
+            1..=3 => 0,
             _ => 1,
         }
     };
@@ -70,12 +78,16 @@ pub fn plan_melody_phrased(
         let contour_kind = ((seed.wrapping_add(p as u64 * 0x9E3779B9)) >> 40) % 5;
         for k in 0..plen {
             let i = syl_cursor + k;
-            let u = if plen == 1 { 0.5 } else { k as f32 / (plen - 1) as f32 };
+            let u = if plen == 1 {
+                0.5
+            } else {
+                k as f32 / (plen - 1) as f32
+            };
             let offset_f = match contour_kind {
-                0 => (std::f32::consts::PI * u).sin() * range as f32,          // arc-up
-                1 => -(std::f32::consts::PI * u).sin() * range as f32,         // arc-down
-                2 => (u * 2.0 - 1.0) * range as f32,                            // ascent
-                3 => (1.0 - u * 2.0) * range as f32,                            // descent
+                0 => (std::f32::consts::PI * u).sin() * range as f32, // arc-up
+                1 => -(std::f32::consts::PI * u).sin() * range as f32, // arc-down
+                2 => (u * 2.0 - 1.0) * range as f32,                  // ascent
+                3 => (1.0 - u * 2.0) * range as f32,                  // descent
                 _ => ((std::f32::consts::PI * 2.0 * u).sin() * 0.5) * range as f32, // return
             };
             let stress = stresses.get(i).copied().unwrap_or(1.0);
@@ -131,7 +143,9 @@ pub fn render_vox_pho_phrased(
     for (p_idx, &plen) in phrase_lens.iter().enumerate() {
         for k in 0..plen {
             let i = cursor + k;
-            if i >= notes.len() { break; }
+            if i >= notes.len() {
+                break;
+            }
             let n = &notes[i];
             let phs = &phonemes_per_syl[i];
             let total: u32 = n.dur_ms;
@@ -158,15 +172,24 @@ pub fn render_vox_pho_phrased(
                     _ => (n.hz, n.hz),
                 };
                 let mut pitch = vec![
-                    PitchPoint { pct: 10, hz: start_hz },
-                    PitchPoint { pct: 90, hz: end_hz },
+                    PitchPoint {
+                        pct: 10,
+                        hz: start_hz,
+                    },
+                    PitchPoint {
+                        pct: 90,
+                        hz: end_hz,
+                    },
                 ];
                 if enable_vib && is_last {
                     // Target ~5 Hz vibrato rate. dur ms → number of cycles.
                     let depth = 2f32.powf(25.0 / 1200.0);
                     let cycles = (dur as f32 * 0.005).round().max(1.0) as u32; // 5 Hz
-                    // Each cycle produces 2 extra points (up, down). Span 20%..80% of phoneme.
-                    let mut pts = vec![PitchPoint { pct: 10, hz: start_hz }];
+                                                                               // Each cycle produces 2 extra points (up, down). Span 20%..80% of phoneme.
+                    let mut pts = vec![PitchPoint {
+                        pct: 10,
+                        hz: start_hz,
+                    }];
                     let total_pts = (cycles * 2) as i32;
                     for i in 0..total_pts {
                         let pct = 20 + (i as u32 + 1) * 60 / (total_pts as u32 + 1);
@@ -176,7 +199,10 @@ pub fn render_vox_pho_phrased(
                             hz: if up { end_hz * depth } else { end_hz / depth },
                         });
                     }
-                    pts.push(PitchPoint { pct: 90, hz: end_hz });
+                    pts.push(PitchPoint {
+                        pct: 90,
+                        hz: end_hz,
+                    });
                     pitch = pts;
                 }
                 stream.push(Pho {
@@ -205,7 +231,10 @@ mod tests {
     #[test]
     fn phrase_contour_lengths() {
         let scale = Scale::new(Key::A, ScaleKind::Minor);
-        let syls: Vec<String> = "a b c d e f".split_whitespace().map(str::to_string).collect();
+        let syls: Vec<String> = "a b c d e f"
+            .split_whitespace()
+            .map(str::to_string)
+            .collect();
         let notes = plan_melody_phrased(&scale, &syls, &[2, 4], 7, 220.0, 96.0, &[1.0; 6]);
         assert_eq!(notes.len(), 6);
         for n in &notes {
@@ -238,9 +267,15 @@ mod tests {
         let syls = vec!["na".to_string(), "dir".to_string()];
         // primary stressed (1.2) at 120 bpm = 500ms beat
         let notes = plan_melody(&scale, &syls, 1, 220.0, 120.0, &[1.2, 0.85]);
-        assert_eq!(notes[0].dur_ms, 500, "primary stress → full beat at 120 bpm");
+        assert_eq!(
+            notes[0].dur_ms, 500,
+            "primary stress → full beat at 120 bpm"
+        );
         // Last note of a phrase gets 1.25x rubato: 250 → 312
-        assert_eq!(notes[1].dur_ms, 312, "unstressed last note → half beat × 1.25 rubato");
+        assert_eq!(
+            notes[1].dur_ms, 312,
+            "unstressed last note → half beat × 1.25 rubato"
+        );
     }
 
     #[test]

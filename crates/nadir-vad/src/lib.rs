@@ -72,7 +72,11 @@ pub fn detect_onsets(cfg: &VadConfig, in_wav: &Path, bpm: Option<f32>) -> Result
     Ok(onsets)
 }
 
-pub fn split_segments(cfg: &VadConfig, in_wav: &Path, out_dir: &Path) -> Result<Vec<std::path::PathBuf>> {
+pub fn split_segments(
+    cfg: &VadConfig,
+    in_wav: &Path,
+    out_dir: &Path,
+) -> Result<Vec<std::path::PathBuf>> {
     let out = Command::new(&cfg.uv_bin)
         .arg("run")
         .arg("--project")
