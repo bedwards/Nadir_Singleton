@@ -1,0 +1,27 @@
+[track]
+n = 7
+slug = "07_short_aria"
+title = "Short Aria"
+key = "G"
+scale = "dorian"
+bpm = 84
+meter = [3, 4]
+bars = 36
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the first aria; the singleton finds it can sustain"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["12_memory_hymn"]
+
+[targets]
+tessitura_hz = [180, 500]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

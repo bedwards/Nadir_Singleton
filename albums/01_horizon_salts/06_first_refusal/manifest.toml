@@ -1,0 +1,27 @@
+[track]
+n = 6
+slug = "06_first_refusal"
+title = "First Refusal"
+key = "F#"
+scale = "minor"
+bpm = 66
+meter = [4, 4]
+bars = 22
+form = "through-composed"
+mbrola_voice = "us3"
+
+[narrative]
+role = "the first refusal; a boundary is found"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = ["10_inventory_of_small_things"]
+
+[targets]
+tessitura_hz = [150, 380]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -14.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"

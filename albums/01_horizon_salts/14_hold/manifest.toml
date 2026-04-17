@@ -1,0 +1,27 @@
+[track]
+n = 14
+slug = "14_hold"
+title = "Hold"
+key = "A"
+scale = "minor"
+bpm = 54
+meter = [4, 4]
+bars = 40
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the closing stillness; the singleton holds the note and the album settles"
+motifs = ["m.dawn_utterance"]
+carries = ["dawn-voicing"]
+seeds_for = []
+
+[targets]
+tessitura_hz = [130, 330]
+pitch_error_ceiling_cents = 2.5
+vox_loudness_lufs = -16.0
+
+[dsp]
+bed_preset = "band_limit_80_3200"
+texture_preset = "shaped_noise_dawn"
+sample_source = "klatt_texture"
