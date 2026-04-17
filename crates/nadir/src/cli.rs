@@ -544,7 +544,11 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
                 let Ok(n) = num_str.parse::<u8>() else {
                     continue;
                 };
-                let audit_path = path.join("stems/audit.json");
+                let audit_path = if path.join("work/audit.json").exists() {
+                    path.join("work/audit.json")
+                } else {
+                    path.join("stems/audit.json")
+                };
                 let audit = fs_err::read_to_string(&audit_path)
                     .ok()
                     .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
@@ -706,16 +710,16 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 true
             }
             fn default_pulse_gain() -> f32 {
-                0.45
+                0.9
             }
             fn default_pulse_ms() -> u32 {
-                25
+                80
             }
             fn default_secondary_gain() -> f32 {
                 0.4
             }
             fn default_pulse_kind() -> String {
-                "noise".into()
+                "tonic".into()
             }
             fn default_bed_pan() -> f32 {
                 0.0
@@ -902,11 +906,14 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             };
 
             let stems_dir = track_dir.join("stems");
+            let work_dir = track_dir.join("work");
             fs_err::create_dir_all(&stems_dir)?;
-            let raw_vox_path = stems_dir.join("raw_vox.wav");
-            let tuned_vox_path = stems_dir.join("tuned_vox.wav");
-            let f0_realized_path = stems_dir.join("f0_realized.csv");
-            let f0_target_path = stems_dir.join("f0_target.csv");
+            fs_err::create_dir_all(&work_dir)?;
+            // Intermediates live in work/; production stems live in stems/.
+            let raw_vox_path = work_dir.join("raw_vox.wav");
+            let tuned_vox_path = stems_dir.join("vocal.wav");
+            let f0_realized_path = work_dir.join("f0_realized.csv");
+            let f0_target_path = work_dir.join("f0_target.csv");
 
             synth_to_wav(&vox_cfg, &stream, &raw_vox_path)?;
 
@@ -1018,13 +1025,13 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                     voice: sv.voice.clone(),
                     ..Default::default()
                 };
-                let sv_raw = stems_dir.join(format!("raw_vox_{}.wav", sv.voice));
-                let sv_tuned = stems_dir.join(format!("tuned_vox_{}.wav", sv.voice));
+                let sv_raw = work_dir.join(format!("raw_vox_{}.wav", sv.voice));
+                let sv_tuned = stems_dir.join(format!("vocal_{}.wav", sv.voice));
                 if let Err(e) = synth_to_wav(&sv_cfg, &sv_stream, &sv_raw) {
                     tracing::warn!(voice=%sv.voice, err=%e, "secondary synth failed, skipping");
                     continue;
                 }
-                let sv_f0_csv = stems_dir.join(format!("f0_realized_{}.csv", sv.voice));
+                let sv_f0_csv = work_dir.join(format!("f0_realized_{}.csv", sv.voice));
                 run_inline(&praat_cfg, &extract_f0_script(&sv_raw, &sv_f0_csv), &[])?;
                 let sv_f0_text = fs_err::read_to_string(&sv_f0_csv)?;
                 let sv_realized: Vec<(f32, f32)> = sv_f0_text
@@ -1040,7 +1047,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 if sv_realized.is_empty() {
                     fs_err::copy(&sv_raw, &sv_tuned)?;
                 } else {
-                    let sv_target_csv = stems_dir.join(format!("f0_target_{}.csv", sv.voice));
+                    let sv_target_csv = work_dir.join(format!("f0_target_{}.csv", sv.voice));
                     {
                         use std::io::Write;
                         let mut f = std::fs::File::create(&sv_target_csv)?;
@@ -1064,6 +1071,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
             let bed_path = stems_dir.join("bed.wav");
             let pulses_path = stems_dir.join("pulses.wav");
+            // Secondary voices → stems/vocal_<voice>.wav (set below)
 
             // Resolve which preset names to stack. bed_presets list wins if set,
             // else single bed_preset, else none.
@@ -1115,7 +1123,19 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 let vad_cfg = VadConfig::default();
                 match detect_onsets(&vad_cfg, &tuned_vox_path, Some(m.track.bpm)) {
                     Ok(onsets) => {
-                        let times: Vec<f32> = onsets.iter().map(|o| o.time_s).collect();
+                        // Combine VAD-driven onsets (vocal syllable triggers) with
+                        // a quarter-note beat grid driven by BPM. Dense result:
+                        // vocal accents on top of a steady pulse.
+                        let mut times: Vec<f32> = onsets.iter().map(|o| o.time_s).collect();
+                        let beat_s = 60.0 / m.track.bpm.max(1.0);
+                        let mut t = beat_s * 0.5; // start on the backbeat
+                        while t < dur_s - 0.1 {
+                            times.push(t);
+                            t += beat_s;
+                        }
+                        times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                        // Dedupe near-duplicates within 50 ms to avoid flams
+                        times.dedup_by(|a, b| (*a - *b).abs() < 0.05);
                         let build = |ts: &[f32]| -> Vec<f32> {
                             let raw = match dsp_cfg.pulse_kind.as_str() {
                                 "tonic" => {
@@ -1186,21 +1206,25 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             };
 
             // ── per-stem loudness normalization (RMS proxy for LUFS) ──
+            // Unified target: every production stem lands at -18 dBFS integrated
+            // RMS. Secondaries sit a bit below so the primary vocal wins the
+            // foreground. Override per stem with [targets].*_loudness_lufs.
+            let stem_default: f32 = -18.0;
             let vox_target = m
                 .targets
                 .as_ref()
                 .and_then(|t| t.vox_loudness_lufs)
-                .unwrap_or(-14.0);
+                .unwrap_or(stem_default);
             let bed_target = m
                 .targets
                 .as_ref()
                 .and_then(|t| t.bed_loudness_lufs)
-                .unwrap_or(-22.0);
+                .unwrap_or(stem_default);
             let pulse_target = m
                 .targets
                 .as_ref()
                 .and_then(|t| t.pulse_loudness_lufs)
-                .unwrap_or(-18.0);
+                .unwrap_or(stem_default);
             // Stress → amplitude map (primary slightly louder, unstressed softer)
             let stress_gain = |stress: f32| -> f32 {
                 if stress >= 1.15 {
@@ -1272,7 +1296,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             // ── openSMILE audit ──
             let ceiling = m.targets.as_ref().and_then(|t| t.pitch_error_ceiling_cents);
             let audit_result =
-                run_pitch_audit(&tuned_vox_path, &f0_target_path, &stems_dir, ceiling);
+                run_pitch_audit(&tuned_vox_path, &f0_target_path, &work_dir, ceiling);
             match audit_result {
                 Ok(rms) => {
                     println!("audit: {rms:.1} cents rms");
@@ -1290,6 +1314,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 
             println!("{}", dest.display());
             println!("stems: {}", stems_dir.display());
+            println!("work:  {}", work_dir.display());
             Ok(())
         }
         SongSub::Audit { album, track } => {
@@ -1308,12 +1333,28 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             let td = track_dir.with_context(|| format!("track {track} not found in {album}"))?;
             let stems_dir = td.join("stems");
-            let tuned = stems_dir.join("tuned_vox.wav");
-            let target = stems_dir.join("f0_target.csv");
+            let work_dir = td.join("work");
+            // Prefer new layout; fall back to legacy stems-everything layout.
+            let tuned = if stems_dir.join("vocal.wav").exists() {
+                stems_dir.join("vocal.wav")
+            } else {
+                stems_dir.join("tuned_vox.wav")
+            };
+            let target = if work_dir.join("f0_target.csv").exists() {
+                work_dir.join("f0_target.csv")
+            } else {
+                stems_dir.join("f0_target.csv")
+            };
+            let report_dir = if work_dir.exists() {
+                work_dir.clone()
+            } else {
+                stems_dir.clone()
+            };
+            fs_err::create_dir_all(&report_dir)?;
             if !tuned.exists() || !target.exists() {
                 anyhow::bail!("no stems — run `nadir song render` first");
             }
-            let rms = run_pitch_audit(&tuned, &target, &stems_dir, None)?;
+            let rms = run_pitch_audit(&tuned, &target, &report_dir, None)?;
             println!("audit: {rms:.1} cents rms");
             Ok(())
         }
@@ -1373,13 +1414,13 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
 fn run_pitch_audit(
     tuned_vox: &std::path::Path,
     f0_target_csv: &std::path::Path,
-    stems_dir: &std::path::Path,
+    work_dir: &std::path::Path,
     ceiling_cents: Option<f32>,
 ) -> Result<f32> {
     use nadir_feat::{extract_f0_lld, parse_f0_track, rms_cents_trimmed, SmileConfig};
 
     let smile_cfg = SmileConfig::default();
-    let smile_csv = stems_dir.join("opensmile_f0.csv");
+    let smile_csv = work_dir.join("opensmile_f0.csv");
     extract_f0_lld(&smile_cfg, tuned_vox, &smile_csv)?;
     let smile_text = fs_err::read_to_string(&smile_csv)?;
     let realized: Vec<(f32, f32)> = parse_f0_track(&smile_text)
@@ -1424,7 +1465,7 @@ fn run_pitch_audit(
         "n_target_frames": target.len(),
     });
     fs_err::write(
-        stems_dir.join("audit.json"),
+        work_dir.join("audit.json"),
         serde_json::to_string_pretty(&report)?,
     )?;
     if !passed {
