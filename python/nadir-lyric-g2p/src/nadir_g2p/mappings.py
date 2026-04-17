@@ -17,13 +17,16 @@ US_ARPABET_TO_SAMPA: dict[str, str] = {
     "AH": "V",
     "AO": "O",
     "AW": "aU",
-    "AY": "aI",
+    # MBROLA us1 diphone inventory uses uppercase diphthong heads (AI, EI, @U)
+    # rather than SAMPA-standard (aI, eI, oU). Match the voice, not the spec:
+    # the actual diphone database is what can be synthesized.
+    "AY": "AI",
     "EH": "E",
     "ER": "r=",
-    "EY": "eI",
+    "EY": "EI",
     "IH": "I",
     "IY": "i",
-    "OW": "oU",
+    "OW": "@U",
     "OY": "OI",
     "UH": "U",
     "UW": "u",

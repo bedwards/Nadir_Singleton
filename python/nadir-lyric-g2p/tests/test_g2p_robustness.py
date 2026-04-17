@@ -106,18 +106,24 @@ def test_stress_duration_multiplier_values():
 
 def test_arpabet_to_sampa_with_stress_strips_digits():
     pairs = arpabet_to_sampa_with_stress(["AY1", "L", "AH0", "V"], voice="us1")
-    assert pairs == [("aI", 1.2), ("l", 1.0), ("V", 0.85), ("v", 1.0)]
+    assert pairs == [("AI", 1.2), ("l", 1.0), ("V", 0.85), ("v", 1.0)]
 
 
 def test_diphthongs_single_sampa_tokens():
-    """All five US diphthongs should emerge as single SAMPA tokens."""
+    """All five US diphthongs emerge as the us1 diphone-database symbols.
+
+    us1's README lists EI, AI, OI, @U, aU as the diphthong heads — these
+    are the literal keys in the diphone database, so our g2p must emit
+    them rather than SAMPA-standard (eI/aI/oU). See mappings.py for the
+    reconciliation note.
+    """
     # price → P R AY1 S, mouth → M AW1 TH, choice → CH OY1 S,
     # goat → G OW1 T, face → F EY1 S.
-    assert "aI" in phonemize_word("price")
+    assert "AI" in phonemize_word("price")
     assert "aU" in phonemize_word("mouth")
     assert "OI" in phonemize_word("choice")
-    assert "oU" in phonemize_word("goat")
-    assert "eI" in phonemize_word("face")
+    assert "@U" in phonemize_word("goat")
+    assert "EI" in phonemize_word("face")
 
 
 def test_oov_digraph_fallback_sh():

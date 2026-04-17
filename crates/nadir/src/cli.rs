@@ -663,6 +663,12 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             struct TargetsFields {
                 #[serde(default)]
                 pitch_error_ceiling_cents: Option<f32>,
+                #[serde(default)]
+                vox_loudness_lufs: Option<f32>,
+                #[serde(default)]
+                bed_loudness_lufs: Option<f32>,
+                #[serde(default)]
+                pulse_loudness_lufs: Option<f32>,
             }
             #[derive(Deserialize)]
             struct FullManifest {
@@ -957,7 +963,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             let bed_path = stems_dir.join("bed.wav");
             let pulses_path = stems_dir.join("pulses.wav");
 
-            let bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
+            let mut bed = if let Some(name) = dsp_cfg.bed_preset.as_deref() {
                 let mut raw = match nadir_render::resolve_bed(name) {
                     Some(nadir_render::BedKind::ShapedNoise { low, high, tilt }) => {
                         Some(nadir_render::bed_shaped_noise(dur_s, low, high, tilt)?)
@@ -984,7 +990,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             };
 
             // Returns Vec<(samples, pan)> — one entry if pingpong off, two if on.
-            let pulse_stems: Vec<(Vec<f32>, f32)> = if dsp_cfg.pulses {
+            let mut pulse_stems: Vec<(Vec<f32>, f32)> = if dsp_cfg.pulses {
                 use nadir_vad::{detect_onsets, VadConfig};
                 let vad_cfg = VadConfig::default();
                 match detect_onsets(&vad_cfg, &tuned_vox_path, Some(m.track.bpm)) {
@@ -1058,6 +1064,39 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             } else {
                 Vec::new()
             };
+
+            // ── per-stem loudness normalization (RMS proxy for LUFS) ──
+            let vox_target = m
+                .targets
+                .as_ref()
+                .and_then(|t| t.vox_loudness_lufs)
+                .unwrap_or(-14.0);
+            let bed_target = m
+                .targets
+                .as_ref()
+                .and_then(|t| t.bed_loudness_lufs)
+                .unwrap_or(-22.0);
+            let pulse_target = m
+                .targets
+                .as_ref()
+                .and_then(|t| t.pulse_loudness_lufs)
+                .unwrap_or(-18.0);
+            // Vocal WAV on disk — normalize in place
+            {
+                let (mut v, sr) = nadir_render::wav_to_f32(&tuned_vox_path)?;
+                nadir_render::normalize_to_dbfs(&mut v, vox_target, 18.0);
+                nadir_render::f32_to_wav_s16(&v, sr, &tuned_vox_path)?;
+            }
+            if let Some(ref mut b) = bed {
+                nadir_render::normalize_to_dbfs(b, bed_target, 18.0);
+            }
+            for (samples, _) in pulse_stems.iter_mut() {
+                nadir_render::normalize_to_dbfs(samples, pulse_target, 18.0);
+            }
+            for (samples, _, _) in secondary_stems.iter_mut() {
+                // Secondaries blend with primary vocal — slightly below
+                nadir_render::normalize_to_dbfs(samples, vox_target - 3.0, 18.0);
+            }
 
             let mut stems: Vec<(&[f32], f32, f32)> = Vec::new(); // (samples, gain, pan)
             if let Some(ref b) = bed {
