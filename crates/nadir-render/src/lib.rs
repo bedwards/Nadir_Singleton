@@ -82,7 +82,10 @@ pub fn f32_to_wav_s16(samples: &[f32], sr: u32, out: &Path) -> Result<()> {
 /// Write stereo (L, R) f32 samples as 16-bit PCM WAV at `sr`.
 /// Both slices must have the same length.
 pub fn stereo_to_wav_s16(left: &[f32], right: &[f32], sr: u32, out: &Path) -> Result<()> {
-    anyhow::ensure!(left.len() == right.len(), "stereo channels differ in length");
+    anyhow::ensure!(
+        left.len() == right.len(),
+        "stereo channels differ in length"
+    );
     let spec = hound::WavSpec {
         channels: 2,
         sample_rate: sr,
@@ -220,8 +223,14 @@ pub fn bed_tonal_triad(
 ) -> Vec<f32> {
     let degrees = scale.degrees_hz(octave);
     let root = degrees.first().copied().unwrap_or(220.0);
-    let third = degrees.get(2).copied().unwrap_or(root * 2f32.powf(3.0 / 12.0));
-    let fifth = degrees.get(4).copied().unwrap_or(root * 2f32.powf(7.0 / 12.0));
+    let third = degrees
+        .get(2)
+        .copied()
+        .unwrap_or(root * 2f32.powf(3.0 / 12.0));
+    let fifth = degrees
+        .get(4)
+        .copied()
+        .unwrap_or(root * 2f32.powf(7.0 / 12.0));
     let sr = MASTER_SR as f32;
     let n = (duration_s * sr).ceil() as usize;
     let mut out = vec![0.0f32; n];
@@ -235,8 +244,8 @@ pub fn bed_tonal_triad(
     for (f, amp) in partials {
         let dphi = 2.0 * std::f32::consts::PI * f / sr;
         let mut phi: f32 = 0.0;
-        for i in 0..n {
-            out[i] += amp * phi.sin();
+        for s in out.iter_mut().take(n) {
+            *s += amp * phi.sin();
             phi += dphi;
         }
     }
@@ -258,7 +267,9 @@ pub fn pulse_track(onsets_s: &[f32], duration_s: f32, pulse_ms: u32, seed: u64) 
     let plen = ((pulse_ms as f32 / 1000.0) * sr) as usize;
     let mut rng = seed;
     let mut rand01 = || {
-        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng = rng
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         ((rng >> 33) as f32) / ((1u32 << 31) as f32) * 2.0 - 1.0
     };
     for &t in onsets_s {
@@ -282,7 +293,11 @@ pub fn split_onsets_even_odd(onsets_s: &[f32]) -> (Vec<f32>, Vec<f32>) {
     let mut even = Vec::new();
     let mut odd = Vec::new();
     for (i, &t) in onsets_s.iter().enumerate() {
-        if i % 2 == 0 { even.push(t); } else { odd.push(t); }
+        if i % 2 == 0 {
+            even.push(t);
+        } else {
+            odd.push(t);
+        }
     }
     (even, odd)
 }
@@ -440,17 +455,38 @@ pub enum BedKind {
 /// Returns `None` for unrecognized presets.
 pub fn resolve_bed(name: &str) -> Option<BedKind> {
     match name {
-        "shaped_noise_dawn" => Some(BedKind::ShapedNoise { low: -0.04, high: 0.04, tilt: 120e-6 }),
-        "shaped_noise_dusk" => Some(BedKind::ShapedNoise { low: -0.08, high: 0.08, tilt: 200e-6 }),
-        "shaped_noise_air" => Some(BedKind::ShapedNoise { low: -0.25, high: 0.25, tilt: 30e-6 }),
+        "shaped_noise_dawn" => Some(BedKind::ShapedNoise {
+            low: -0.04,
+            high: 0.04,
+            tilt: 120e-6,
+        }),
+        "shaped_noise_dusk" => Some(BedKind::ShapedNoise {
+            low: -0.08,
+            high: 0.08,
+            tilt: 200e-6,
+        }),
+        "shaped_noise_air" => Some(BedKind::ShapedNoise {
+            low: -0.25,
+            high: 0.25,
+            tilt: 30e-6,
+        }),
         "band_limit_80_3200" => Some(BedKind::ShapedNoise {
             low: 80.0 / MASTER_SR as f32,
             high: 3200.0 / MASTER_SR as f32,
             tilt: 80e-6,
         }),
-        "tonal_drone_triad" => Some(BedKind::TonalTriad { octave: -1, fade_s: 0.8 }),
-        "tonal_drone_low" => Some(BedKind::TonalTriad { octave: -2, fade_s: 1.2 }),
-        "tonal_drone_high" => Some(BedKind::TonalTriad { octave: 0, fade_s: 0.5 }),
+        "tonal_drone_triad" => Some(BedKind::TonalTriad {
+            octave: -1,
+            fade_s: 0.8,
+        }),
+        "tonal_drone_low" => Some(BedKind::TonalTriad {
+            octave: -2,
+            fade_s: 1.2,
+        }),
+        "tonal_drone_high" => Some(BedKind::TonalTriad {
+            octave: 0,
+            fade_s: 0.5,
+        }),
         _ => None,
     }
 }
