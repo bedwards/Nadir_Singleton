@@ -1,0 +1,34 @@
+[track]
+n = 8
+slug = "08_phase_hail"
+title = "Phase Hail"
+key = "A"
+scale = "minor"
+bpm = 132
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "side B opens with violence; hard-edged dirac hits with phase-scattered IR tails; hail on metal"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "hail_impulse"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -13.0
+spectral_slope_db_per_oct_target = -2.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+bed_variation = "dirac_impulse_bed_hail_32nd"
+texture_preset = "ring_mod_multi"
+texture_variation = "ring_mod_multi_metallic"
+sample_source = "fir_cascade"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

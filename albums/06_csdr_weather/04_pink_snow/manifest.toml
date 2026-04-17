@@ -1,0 +1,35 @@
+[track]
+n = 4
+slug = "04_pink_snow"
+title = "Pink Snow"
+key = "A"
+scale = "minor"
+bpm = 44
+meter = [4, 4]
+bars = 36
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "snow with a pink spectrum; quietest full-spectrum moment; the rain has stilled into flakes"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "pink_spectrum"]
+seeds_for = ["07_granular_snow"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -22.0
+spectral_slope_db_per_oct_target = -3.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+bed_variation = "shaped_noise_bed_pink"
+texture_preset = "deemphasis_chain"
+texture_variation = "deemphasis_chain_soft"
+sample_source = "dirac_impulse_bed_sparse"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

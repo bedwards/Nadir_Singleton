@@ -1,0 +1,35 @@
+[track]
+n = 14
+slug = "14_room_impulse_night"
+title = "Room Impulse Night"
+key = "A"
+scale = "minor"
+bpm = 36
+meter = [4, 4]
+bars = 32
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "closer; the weather has passed; we listen to the room itself; m.room_impulse deployed bare, very long IRs decaying into silence"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "coda"]
+reprises = ["m.room_impulse"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -25.0
+spectral_slope_db_per_oct_target = -9.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "dirac_impulse_bed"
+bed_variation = "dirac_impulse_bed_coda_vlong"
+texture_preset = "shaped_noise_bed"
+texture_variation = "shaped_noise_bed_nightroom"
+sample_source = "fir_cascade"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]

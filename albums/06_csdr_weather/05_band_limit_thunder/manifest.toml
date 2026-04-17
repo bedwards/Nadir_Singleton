@@ -1,0 +1,34 @@
+[track]
+n = 5
+slug = "05_band_limit_thunder"
+title = "Band-Limit Thunder"
+key = "A"
+scale = "minor"
+bpm = 60
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = ""
+
+[narrative]
+role = "a distant front; bandlimited rumbles below 200 Hz; the album's first true fright"
+motifs = ["m.room_impulse"]
+carries = ["dsp_only", "low_band_rumble"]
+
+[targets]
+tessitura_hz = [0, 0]
+pitch_error_ceiling_cents = 0.0
+vox_loudness_lufs = -14.0
+spectral_slope_db_per_oct_target = -15.0
+voicing_fraction_ceiling = 0.02
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+bed_variation = "shaped_noise_bed_sub_200"
+texture_preset = "dirac_impulse_bed"
+texture_variation = "dirac_impulse_bed_long_tail"
+sample_source = "fir_cascade"
+
+[audit]
+opensmile_config = "eGeMAPSv02"
+audit_features = ["spectral_slope", "loudness", "band_limited_rms"]
