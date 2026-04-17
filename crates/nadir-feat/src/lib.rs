@@ -43,6 +43,25 @@ impl FeatureSet {
     }
 }
 
+/// Extract per-frame F0 LLD track using `prosody/smileF0.conf`. Emits CSV with
+/// `name;frameTime;F0final_sma` columns — compatible with `parse_f0_track`.
+pub fn extract_f0_lld(cfg: &SmileConfig, in_wav: &Path, out_csv: &Path) -> Result<()> {
+    let conf = cfg.config_dir.join("prosody/smileF0.conf");
+    let status = Command::new(&cfg.bin)
+        .arg("-C")
+        .arg(&conf)
+        .arg("-I")
+        .arg(in_wav)
+        .arg("-csvoutput")
+        .arg(out_csv)
+        .status()
+        .with_context(|| format!("spawn SMILExtract at {}", cfg.bin.display()))?;
+    if !status.success() {
+        anyhow::bail!("SMILExtract smileF0 failed ({status})");
+    }
+    Ok(())
+}
+
 pub fn extract_csv(cfg: &SmileConfig, fs: FeatureSet, in_wav: &Path, out_csv: &Path) -> Result<()> {
     let conf = fs.config_path(&cfg.config_dir);
     let status = Command::new(&cfg.bin)
