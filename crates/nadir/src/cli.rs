@@ -49,6 +49,18 @@ pub enum Cmd {
     Doctor,
     /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
     Play { file: PathBuf },
+    /// Master a WAV to a target integrated LUFS via ffmpeg two-pass loudnorm.
+    /// Default -9 LUFS for YouTube delivery (YouTube attenuates to ~-14).
+    Master {
+        in_wav: PathBuf,
+        out_wav: PathBuf,
+        #[arg(long, default_value_t = -9.0)]
+        lufs: f32,
+        #[arg(long, default_value_t = -1.0)]
+        true_peak: f32,
+        #[arg(long, default_value_t = 7.0)]
+        lra: f32,
+    },
     /// Compile rendered tracks into ~target-minute chains with crossfade.
     /// Used to produce 11.5-minute YouTube compilations.
     Compile {
@@ -392,6 +404,13 @@ pub fn dispatch(cli: Cli) -> Result<()> {
         Research(c) => dispatch_research(c),
         Doctor => dispatch_doctor(),
         Play { file } => dispatch_play(&file),
+        Master {
+            in_wav,
+            out_wav,
+            lufs,
+            true_peak,
+            lra,
+        } => dispatch_master(&in_wav, &out_wav, lufs, true_peak, lra),
         Compile {
             albums,
             target_minutes,
@@ -399,6 +418,73 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             out_dir,
         } => dispatch_compile(&albums, target_minutes, xfade_ms, &out_dir),
     }
+}
+
+/// Two-pass ffmpeg loudnorm master. Pass 1 measures, pass 2 applies linear
+/// gain correction. ffmpeg is used here as a mastering-chain tool — distinct
+/// from the five core synthesis/DSP tools (MBROLA, Praat, openSMILE,
+/// Silero-VAD, csdr) that build the audio — per the user's explicit call in
+/// the release plan. See docs/RELEASE_PLAN.md.
+fn dispatch_master(
+    in_wav: &std::path::Path,
+    out_wav: &std::path::Path,
+    lufs: f32,
+    tp: f32,
+    lra: f32,
+) -> Result<()> {
+    if !in_wav.exists() {
+        anyhow::bail!("no such file: {}", in_wav.display());
+    }
+    let filter_pass1 = format!("loudnorm=I={lufs}:TP={tp}:LRA={lra}:print_format=json");
+    let out = std::process::Command::new("ffmpeg")
+        .args(["-hide_banner", "-nostats", "-i"])
+        .arg(in_wav)
+        .args(["-af", &filter_pass1, "-f", "null", "-"])
+        .output()
+        .context("spawn ffmpeg pass 1")?;
+    if !out.status.success() {
+        anyhow::bail!(
+            "ffmpeg pass 1 failed ({}): {}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+    // Parse JSON block from stderr (loudnorm prints to stderr)
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let start = stderr
+        .rfind('{')
+        .context("no JSON block in ffmpeg pass 1 output")?;
+    let end = stderr[start..]
+        .rfind('}')
+        .context("no JSON close in ffmpeg pass 1 output")?
+        + start
+        + 1;
+    let json_text = &stderr[start..end];
+    let v: serde_json::Value = serde_json::from_str(json_text).context("parse loudnorm json")?;
+    let measured_i = v["input_i"].as_str().unwrap_or("-24.0");
+    let measured_lra = v["input_lra"].as_str().unwrap_or("11.0");
+    let measured_tp = v["input_tp"].as_str().unwrap_or("-2.0");
+    let measured_thresh = v["input_thresh"].as_str().unwrap_or("-34.0");
+    let target_offset = v["target_offset"].as_str().unwrap_or("0.0");
+
+    let filter_pass2 = format!(
+        "loudnorm=I={lufs}:TP={tp}:LRA={lra}:measured_I={measured_i}:measured_LRA={measured_lra}:measured_TP={measured_tp}:measured_thresh={measured_thresh}:offset={target_offset}:linear=true:print_format=summary"
+    );
+    let status = std::process::Command::new("ffmpeg")
+        .args(["-hide_banner", "-y", "-i"])
+        .arg(in_wav)
+        .args(["-af", &filter_pass2, "-c:a", "pcm_s24le"])
+        .arg(out_wav)
+        .status()
+        .context("spawn ffmpeg pass 2")?;
+    if !status.success() {
+        anyhow::bail!("ffmpeg pass 2 failed ({status})");
+    }
+    println!(
+        "mastered: {} ({measured_i} → {lufs} LUFS integrated)",
+        out_wav.display()
+    );
+    Ok(())
 }
 
 /// Walk `albums/` to collect rendered track wavs in deterministic order.
