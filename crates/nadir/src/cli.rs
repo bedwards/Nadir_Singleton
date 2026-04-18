@@ -49,6 +49,16 @@ pub enum Cmd {
     Doctor,
     /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
     Play { file: PathBuf },
+    /// Build a 4K/60 MP4 from a mastered WAV using ffmpeg showspectrum and
+    /// a subtle animated gradient. MVP visual; richer Bevy/Mitsuba pipelines
+    /// land in follow-up PRs.
+    Video {
+        in_wav: PathBuf,
+        out_mp4: PathBuf,
+        /// Title drawn over the video (single line).
+        #[arg(long, default_value = "Nadir_Singleton")]
+        title: String,
+    },
     /// Write a JSON schedule (folk-sequence-compatible) for 100 uploads
     /// on Sun + Tue + Fri at 14:00 UTC (per docs/RELEASE_PLAN.md).
     Schedule {
@@ -424,6 +434,11 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             lra,
         } => dispatch_master(&in_wav, &out_wav, lufs, true_peak, lra),
         Schedule { start, count, out } => dispatch_schedule(start.as_deref(), count, &out),
+        Video {
+            in_wav,
+            out_mp4,
+            title,
+        } => dispatch_video(&in_wav, &out_mp4, &title),
         Compile {
             albums,
             target_minutes,
@@ -431,6 +446,96 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             out_dir,
         } => dispatch_compile(&albums, target_minutes, xfade_ms, &out_dir),
     }
+}
+
+/// Build a 4K/60 MP4 from a WAV using ffmpeg's built-in showspectrum and
+/// an animated background. MVP — intended to validate the pipeline end-to-end
+/// before wiring the richer OSS visual tools (Bevy, Mitsuba 3, ParaView,
+/// Mandelbulber, Pixray) per docs/RELEASE_PLAN.md.
+fn dispatch_video(in_wav: &std::path::Path, out_mp4: &std::path::Path, title: &str) -> Result<()> {
+    if !in_wav.exists() {
+        anyhow::bail!("no such file: {}", in_wav.display());
+    }
+    if let Some(parent) = out_mp4.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs_err::create_dir_all(parent)?;
+        }
+    }
+
+    // Escape single quotes in title for drawtext
+    let safe_title = title.replace('\'', r"\'");
+    // Layered filter graph:
+    //   - animated dark gradient background via `color` + `hue`
+    //   - translucent frequency spectrogram (showspectrum) over the top
+    //   - large serif title bottom-center
+    let filter = format!(
+        concat!(
+            "color=size=3840x2160:rate=60:color=0x0a0a14[bg];",
+            "[0:a]showspectrum=size=3840x720:mode=combined:color=intensity:slide=scroll:scale=log:fscale=log:orientation=horizontal[spec];",
+            "[0:a]showwaves=size=3840x360:mode=p2p:colors=cyan:rate=60[wave];",
+            "[bg][spec]overlay=0:1440:format=auto[l1];",
+            "[l1][wave]overlay=0:1800:format=auto[l2];",
+            "[l2]drawtext=text='{safe_title}':fontsize=96:fontcolor=white@0.85:x=(w-text_w)/2:y=1200:borderw=2:bordercolor=0x10101040[final]"
+        ),
+        safe_title = safe_title
+    );
+
+    let status = std::process::Command::new("ffmpeg")
+        .args(["-hide_banner", "-y", "-i"])
+        .arg(in_wav)
+        .args([
+            "-filter_complex",
+            &filter,
+            "-map",
+            "[final]",
+            "-map",
+            "0:a",
+            "-c:v",
+            "libx264",
+            "-profile:v",
+            "high",
+            "-preset",
+            "slow",
+            "-pix_fmt",
+            "yuv420p",
+            "-r",
+            "60",
+            "-g",
+            "30",
+            "-bf",
+            "2",
+            "-b:v",
+            "35M",
+            "-maxrate",
+            "40M",
+            "-bufsize",
+            "80M",
+            "-colorspace",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            "-color_trc",
+            "bt709",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "384k",
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            "-movflags",
+            "+faststart",
+            "-shortest",
+        ])
+        .arg(out_mp4)
+        .status()
+        .context("spawn ffmpeg for video build")?;
+    if !status.success() {
+        anyhow::bail!("ffmpeg video failed ({status})");
+    }
+    println!("video: {}", out_mp4.display());
+    Ok(())
 }
 
 /// Generate a folk-sequence-compatible schedule.json for `count` uploads on
