@@ -49,6 +49,19 @@ pub enum Cmd {
     Doctor,
     /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
     Play { file: PathBuf },
+    /// Compile rendered tracks into ~target-minute chains with crossfade.
+    /// Used to produce 11.5-minute YouTube compilations.
+    Compile {
+        /// Albums to include (order matters). Empty → all albums in albums/.
+        #[arg(long)]
+        albums: Vec<String>,
+        #[arg(long, default_value_t = 11.5)]
+        target_minutes: f32,
+        #[arg(long, default_value_t = 1500)]
+        xfade_ms: u32,
+        #[arg(long, default_value = "compilations")]
+        out_dir: PathBuf,
+    },
 }
 
 // ─────────── album ───────────
@@ -379,7 +392,239 @@ pub fn dispatch(cli: Cli) -> Result<()> {
         Research(c) => dispatch_research(c),
         Doctor => dispatch_doctor(),
         Play { file } => dispatch_play(&file),
+        Compile {
+            albums,
+            target_minutes,
+            xfade_ms,
+            out_dir,
+        } => dispatch_compile(&albums, target_minutes, xfade_ms, &out_dir),
     }
+}
+
+/// Walk `albums/` to collect rendered track wavs in deterministic order.
+/// Returns Vec<(album_slug, track_slug, wav_path)>.
+fn collect_tracks(albums_filter: &[String]) -> Result<Vec<(String, String, std::path::PathBuf)>> {
+    let root = std::path::Path::new("albums");
+    let mut album_dirs: Vec<std::path::PathBuf> = fs_err::read_dir(root)?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .collect();
+    album_dirs.sort();
+    let mut out = Vec::new();
+    for album_dir in album_dirs {
+        let album_slug = album_dir
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string();
+        if !albums_filter.is_empty() && !albums_filter.contains(&album_slug) {
+            continue;
+        }
+        let mut track_entries: Vec<std::path::PathBuf> = fs_err::read_dir(&album_dir)?
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.is_dir())
+            .collect();
+        track_entries.sort();
+        for td in track_entries {
+            let track_slug = td
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
+            let wav = td.join(format!("{track_slug}.wav"));
+            if wav.exists() {
+                out.push((album_slug.clone(), track_slug, wav));
+            }
+        }
+    }
+    Ok(out)
+}
+
+fn wav_duration_s(path: &std::path::Path) -> Result<f32> {
+    let r = hound::WavReader::open(path)?;
+    Ok(r.duration() as f32 / r.spec().sample_rate as f32)
+}
+
+fn dispatch_compile(
+    albums: &[String],
+    target_minutes: f32,
+    xfade_ms: u32,
+    out_dir: &std::path::Path,
+) -> Result<()> {
+    use nadir_render::wav_to_f32;
+    fs_err::create_dir_all(out_dir)?;
+    let target_s = target_minutes * 60.0;
+    let tracks = collect_tracks(albums)?;
+    if tracks.is_empty() {
+        anyhow::bail!("no rendered tracks found");
+    }
+    let mut manifest_lines: Vec<String> = Vec::new();
+
+    // Pre-measure durations so greedy-pack can decide include/exclude per track.
+    let mut durations: Vec<f32> = Vec::with_capacity(tracks.len());
+    for (_, _, p) in &tracks {
+        durations.push(wav_duration_s(p)?);
+    }
+
+    let mut i = 0usize;
+    let mut compile_idx = 1usize;
+    while i < tracks.len() {
+        let mut bundle: Vec<usize> = vec![i];
+        let mut total = durations[i];
+        i += 1;
+        while i < tracks.len() {
+            let with = total + durations[i];
+            let without = total;
+            // Decide: pick whichever leaves total closer to target_s.
+            let err_with = (with - target_s).abs();
+            let err_without = (without - target_s).abs();
+            if err_with <= err_without {
+                bundle.push(i);
+                total = with;
+                i += 1;
+                // If adding next would only make it worse, stop
+                if total >= target_s {
+                    // Evaluate one more step
+                    if i < tracks.len() {
+                        let next_err = (total + durations[i] - target_s).abs();
+                        if next_err > err_with {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        // Write compilation
+        let out_path = out_dir.join(format!("{compile_idx:03}.wav"));
+        let wavs: Vec<&std::path::Path> = bundle.iter().map(|&k| tracks[k].2.as_path()).collect();
+        let (total_written, spec) = chain_wavs_with_xfade(&wavs, xfade_ms, &out_path)?;
+        println!(
+            "{} — {:.2} min ({} tracks, {} ch, {} Hz)",
+            out_path.display(),
+            total_written / 60.0,
+            bundle.len(),
+            spec.channels,
+            spec.sample_rate
+        );
+        // Manifest lines
+        manifest_lines.push(format!(
+            "[compilation.{compile_idx:03}]\nfile = \"{}\"\nduration_s = {:.3}\ntracks = [",
+            out_path.display(),
+            total_written
+        ));
+        for &k in &bundle {
+            let (a, t, p) = &tracks[k];
+            manifest_lines.push(format!(
+                "  \"{a}/{t}/{}\",",
+                p.file_name().unwrap().to_string_lossy()
+            ));
+        }
+        manifest_lines.push("]\n".into());
+        compile_idx += 1;
+    }
+    fs_err::write(out_dir.join("manifest.toml"), manifest_lines.join("\n"))?;
+    println!(
+        "wrote {} compilations to {}",
+        compile_idx - 1,
+        out_dir.display()
+    );
+    let _ = wav_to_f32; // reserved for future master step wiring
+    Ok(())
+}
+
+/// Concatenate WAVs with a linear equal-power crossfade. All inputs must share
+/// channel count and sample rate. Writes a single WAV out.
+fn chain_wavs_with_xfade(
+    wavs: &[&std::path::Path],
+    xfade_ms: u32,
+    out_path: &std::path::Path,
+) -> Result<(f32, hound::WavSpec)> {
+    if wavs.is_empty() {
+        anyhow::bail!("no wavs to chain");
+    }
+    let first = hound::WavReader::open(wavs[0])?;
+    let spec = first.spec();
+    drop(first);
+    let sr = spec.sample_rate as f32;
+    let ch = spec.channels as usize;
+    let xfade_n = (xfade_ms as f32 / 1000.0 * sr) as usize;
+
+    let mut out: Vec<f32> = Vec::new();
+    for (i, p) in wavs.iter().enumerate() {
+        let (samples, this_sr) = read_wav_interleaved_f32(p)?;
+        if this_sr != spec.sample_rate {
+            anyhow::bail!("sample rate mismatch: {} vs {}", this_sr, spec.sample_rate);
+        }
+        if i == 0 {
+            out.extend_from_slice(&samples);
+            continue;
+        }
+        // Crossfade: fade out last xfade_n frames of `out` and fade in first
+        // xfade_n frames of `samples`, then append the rest.
+        let cur_frames = out.len() / ch;
+        let inc_frames = samples.len() / ch;
+        let x = xfade_n.min(cur_frames).min(inc_frames);
+        for f in 0..x {
+            let t = f as f32 / x as f32;
+            let g_out = (1.0 - t).sqrt();
+            let g_in = t.sqrt();
+            for c in 0..ch {
+                let out_idx = (cur_frames - x + f) * ch + c;
+                let in_idx = f * ch + c;
+                out[out_idx] = out[out_idx] * g_out + samples[in_idx] * g_in;
+            }
+        }
+        // Append frames after the crossfade portion
+        let tail_start_frame = x;
+        let tail_start_sample = tail_start_frame * ch;
+        out.extend_from_slice(&samples[tail_start_sample..]);
+    }
+
+    // Write interleaved
+    let mut w = hound::WavWriter::create(out_path, spec)?;
+    match spec.sample_format {
+        hound::SampleFormat::Int => {
+            for s in &out {
+                let v = (s.clamp(-1.0, 1.0) * 32767.0) as i16;
+                w.write_sample(v)?;
+            }
+        }
+        hound::SampleFormat::Float => {
+            for s in &out {
+                w.write_sample(*s)?;
+            }
+        }
+    }
+    w.finalize()?;
+    let total_s = (out.len() / ch) as f32 / sr;
+    Ok((total_s, spec))
+}
+
+fn read_wav_interleaved_f32(path: &std::path::Path) -> Result<(Vec<f32>, u32)> {
+    let r = hound::WavReader::open(path)?;
+    let spec = r.spec();
+    let samples: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Int => {
+            let bits = spec.bits_per_sample as i32;
+            let max = (1i64 << (bits - 1)) as f32;
+            hound::WavReader::open(path)?
+                .into_samples::<i32>()
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .map(|v| v as f32 / max)
+                .collect()
+        }
+        hound::SampleFormat::Float => hound::WavReader::open(path)?
+            .into_samples::<f32>()
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+    Ok((samples, spec.sample_rate))
 }
 
 fn dispatch_play(file: &std::path::Path) -> Result<()> {
