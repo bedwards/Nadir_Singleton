@@ -49,6 +49,18 @@ pub enum Cmd {
     Doctor,
     /// Play a WAV (afplay on macOS, aplay on Linux). Quality-of-life preview.
     Play { file: PathBuf },
+    /// Write a JSON schedule (folk-sequence-compatible) for 100 uploads
+    /// on Sun + Tue + Fri at 14:00 UTC (per docs/RELEASE_PLAN.md).
+    Schedule {
+        /// Start date (YYYY-MM-DD). Default: today. Jumps forward to next
+        /// Sun/Tue/Fri if not already one.
+        #[arg(long)]
+        start: Option<String>,
+        #[arg(long, default_value_t = 100)]
+        count: u32,
+        #[arg(long, default_value = "output/schedule.json")]
+        out: PathBuf,
+    },
     /// Master a WAV to a target integrated LUFS via ffmpeg two-pass loudnorm.
     /// Default -9 LUFS for YouTube delivery (YouTube attenuates to ~-14).
     Master {
@@ -411,6 +423,7 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             true_peak,
             lra,
         } => dispatch_master(&in_wav, &out_wav, lufs, true_peak, lra),
+        Schedule { start, count, out } => dispatch_schedule(start.as_deref(), count, &out),
         Compile {
             albums,
             target_minutes,
@@ -418,6 +431,56 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             out_dir,
         } => dispatch_compile(&albums, target_minutes, xfade_ms, &out_dir),
     }
+}
+
+/// Generate a folk-sequence-compatible schedule.json for `count` uploads on
+/// Sun/Tue/Fri at 14:00 UTC. Shells to python3 for date arithmetic to avoid
+/// a chrono dependency.
+fn dispatch_schedule(start: Option<&str>, count: u32, out: &std::path::Path) -> Result<()> {
+    if let Some(parent) = out.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs_err::create_dir_all(parent)?;
+        }
+    }
+    let start_arg = start.unwrap_or("");
+    let script = r#"
+import datetime as dt, json, sys
+start_arg, count, out_path = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+if start_arg:
+    d = dt.date.fromisoformat(start_arg)
+else:
+    d = dt.date.today()
+# Sun=6, Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5. Want {6,1,4}.
+slots = {6, 1, 4}  # Sun, Tue, Fri
+while d.weekday() not in slots:
+    d += dt.timedelta(days=1)
+entries = []
+i = 0
+while len(entries) < count:
+    if d.weekday() in slots:
+        entries.append({
+            "episode": f"{len(entries)+1:03d}",
+            "publish_at": f"{d.isoformat()}T14:00:00+00:00",
+        })
+    d += dt.timedelta(days=1)
+    i += 1
+with open(out_path, "w") as f:
+    json.dump(entries, f, indent=2)
+    f.write("\n")
+print(f"wrote {len(entries)} entries spanning {entries[0]['publish_at'][:10]} -> {entries[-1]['publish_at'][:10]}")
+"#;
+    let status = std::process::Command::new("python3")
+        .arg("-c")
+        .arg(script)
+        .arg(start_arg)
+        .arg(count.to_string())
+        .arg(out)
+        .status()
+        .context("spawn python3 for schedule generation")?;
+    if !status.success() {
+        anyhow::bail!("python3 schedule script failed ({status})");
+    }
+    Ok(())
 }
 
 /// Two-pass ffmpeg loudnorm master. Pass 1 measures, pass 2 applies linear
