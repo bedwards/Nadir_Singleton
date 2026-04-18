@@ -123,16 +123,36 @@ Blender, zimage) for frame post-processing, muxing, and procedural 3D.
 
 ### Per-video visual strategy
 
-- Pick the tool per album (not per track) so each album has a visual
-  identity. Example assignments:
-  - Album 01 "Horizon Salts" → Mitsuba 3 participating media
-  - Album 02 "Tin Pan Fathom" → ParaView flow fields
-  - Album 03 "The Spectral Fair" → Bevy + shaders
-  - Album 04 "VAD Epistles" → Mandelbulber keyframed zoom
-  - Album 05 "Phoneme Monastery" → Pixray prompted by phoneme stream
-  - etc. Assignments TBD for remaining albums.
-- All visuals render at 3840×2160 (4K) 60fps so ffmpeg encode matches
-  folk-sequence's existing settings.
+Pick the tool per album (not per track) so each album has a visual
+identity. MVP (`nadir video`) uses ffmpeg's built-in `showspectrum` +
+`showwaves` + `drawtext` so end-to-end ships today; richer per-album
+visuals land in follow-up PRs.
+
+| Album | Tool | Rationale |
+|-------|------|-----------|
+| 01 Horizon Salts | Mitsuba 3 | participating media ≈ salt/horizon/mirror |
+| 02 Tin Pan Fathom | Blender | ragtime cabaret → keyframe-animated 3D scene |
+| 03 The Spectral Fair | Bevy + shaders | carnival eGeMAPS vectors → reactive GPU |
+| 04 VAD Epistles | ImageMagick | letter-form tracks → typography composites |
+| 05 Phoneme Monastery | Pixray | phoneme stream → CLIP-prompt image |
+| 06 csdr Weather | ffmpeg `showspectrum` | DSP-only → literal spectral visuals |
+| 07 Praat Lieder | Mitsuba 3 | minimal art-song → clean-studio lighting |
+| 08 MBROLA Cabaret | Blender | ragtime/cabaret 3D stage |
+| 09 Formant Gardens | ParaView/VTK | botanical → isosurface growth |
+| 10 The Cent Maze | Mandelbulber v2 | microtonal → fractal zoom |
+| 11 Voicing Fraction | Bevy | pop hooks → shader loops |
+| 12 Diphone Drift | ImageMagick | tape-like → layered grain blend |
+| 13 eGeMAPS Tarot | Pixray | 22 archetypes → 22 CLIP prompts |
+| 14 Silero Rooms | Blender | onset-driven → 3D rooms opening |
+| 15 FIR Psalms | Bevy | csdr-shaped → shader hymn loops |
+| 16 Pitch Pilgrimage | Mandelbulber v2 | modal per track → fractal walk |
+| 17 Plosive Letters | ImageMagick | consonant-forward → text motion |
+| 18 Dorian Weather | ParaView/VTK | weather → flow fields |
+| 19 Singleton Suite | Mitsuba 3 | long-form → volumetric continuity |
+| 20 Nadir | ffmpeg + all combined | coda → best-of visual treatments |
+
+All visuals render at **3840×2160 (4K) @ 60fps, libx264 35 Mbps**
+so the ffmpeg encode matches folk-sequence's existing settings.
 
 ## YouTube upload schedule
 
