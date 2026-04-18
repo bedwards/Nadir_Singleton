@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "slow TPA ballad; two neighbours share a moon under a striped awning"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

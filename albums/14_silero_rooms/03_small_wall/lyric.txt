@@ -1,0 +1,12 @@
+long door
+quiet room
+still and still hallway
+empty and still corner
+open and cross
+close and wait
+the floor is bright
+the window is cold
+wait the wall
+cross the door
+still room
+empty room

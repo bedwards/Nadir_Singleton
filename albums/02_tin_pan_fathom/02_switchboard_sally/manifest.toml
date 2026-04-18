@@ -10,6 +10,7 @@ bars = 32
 form = "verse/chorus"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "character study; a switchboard operator who knows every line in town"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

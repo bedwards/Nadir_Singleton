@@ -10,6 +10,7 @@ bars = 10
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "signal emerges; breath-units align into a binary code; we transmit"
 motifs = ["m.nadir_silence"]

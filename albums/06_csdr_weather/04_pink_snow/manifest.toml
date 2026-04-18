@@ -10,6 +10,7 @@ bars = 36
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "snow with a pink spectrum; quietest full-spectrum moment; the rain has stilled into flakes"
 motifs = ["m.room_impulse"]

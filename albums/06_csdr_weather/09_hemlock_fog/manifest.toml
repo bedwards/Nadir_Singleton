@@ -10,6 +10,7 @@ bars = 40
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "after the hail, a long fog bank; near-static; the album's longest held drone"
 motifs = ["m.room_impulse"]

@@ -1,0 +1,21 @@
+[track]
+n = 13
+slug = "13_by_the_lamp"
+title = "by the lamp"
+key = "G"
+scale = "dorian"
+bpm = 112
+meter = [4, 4]
+bars = 30
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2498070907955560419
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

@@ -10,6 +10,7 @@ bars = 10
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "no phonation; only breath; the voice steps aside for the body"
 motifs = ["m.nadir_silence"]

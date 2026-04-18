@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "character study; a lighthouse keeper who polishes the lamp and the story"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

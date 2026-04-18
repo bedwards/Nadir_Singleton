@@ -1,0 +1,21 @@
+[track]
+n = 18
+slug = "18_the_hermit_crosses"
+title = "the hermit crosses"
+key = "G"
+scale = "locrian"
+bpm = 107
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 4736311249954340479
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

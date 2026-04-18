@@ -1,0 +1,21 @@
+[track]
+n = 3
+slug = "03_hard_hill"
+title = "hard hill"
+key = "D"
+scale = "locrian"
+bpm = 91
+meter = [4, 4]
+bars = 19
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2854084982677423484
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

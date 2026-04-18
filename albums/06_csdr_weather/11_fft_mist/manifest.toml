@@ -10,6 +10,7 @@ bars = 24
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "mist after gale; FFT-domain narrow comb brushed across the band; moisture in frequency bins"
 motifs = ["m.room_impulse"]

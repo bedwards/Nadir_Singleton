@@ -1,0 +1,21 @@
+[track]
+n = 1
+slug = "01_sharp_letter"
+title = "sharp letter"
+key = "G"
+scale = "locrian"
+bpm = 106
+meter = [4, 4]
+bars = 28
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2879468305958997189
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

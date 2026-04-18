@@ -10,6 +10,7 @@ bars = 28
 form = "AABA"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "reprise of dorian squall; higher velocity wind; ring-mod carriers now sweep"
 motifs = ["m.room_impulse"]

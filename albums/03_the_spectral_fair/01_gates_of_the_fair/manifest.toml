@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "opener; the turnstile clicks, a voice calls each arrival, F0 stats unfurl the colour of the day"
 motifs = ["m.feature_vector_waltz", "m.dawn_utterance"]

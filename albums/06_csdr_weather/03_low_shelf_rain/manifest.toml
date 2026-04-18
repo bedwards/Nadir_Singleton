@@ -10,6 +10,7 @@ bars = 28
 form = "AB"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "rain proper; a steady wash under a deep low-shelf; the drizzle has committed"
 motifs = ["m.room_impulse"]

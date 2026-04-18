@@ -10,6 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "a goodnight letter to a character from album 02"
 motifs = ["m.letter_cadence"]

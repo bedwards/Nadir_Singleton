@@ -10,6 +10,7 @@ bars = 10
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "a single consonant escapes during the Great Silence; the drone refuses to cover it"
 motifs = ["m.letter_cadence"]

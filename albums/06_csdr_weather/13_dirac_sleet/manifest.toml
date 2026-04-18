@@ -10,6 +10,7 @@ bars = 24
 form = "AB"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "late-album return of impulse rhythm; colder than drizzle, softer than hail; icy patter"
 motifs = ["m.room_impulse"]

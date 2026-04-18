@@ -10,6 +10,7 @@ bars = 22
 form = "through-composed"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "the final letter; to everyone and no one"
 motifs = ["m.letter_cadence"]

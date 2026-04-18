@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "closer; the lights of every family go out one by one, the waltz tucked away for the night"
 motifs = ["m.feature_vector_waltz", "m.dawn_utterance"]

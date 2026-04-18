@@ -10,6 +10,7 @@ bars = 12
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "third hour; /u/ is admitted — the brotherhood of three vowels is complete"
 motifs = ["m.vowel_drone"]

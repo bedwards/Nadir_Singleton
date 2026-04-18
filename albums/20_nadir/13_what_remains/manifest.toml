@@ -10,6 +10,7 @@ bars = 8
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "inventory of what is left before the final utterance; one word, spoken"
 motifs = ["m.nadir_silence"]

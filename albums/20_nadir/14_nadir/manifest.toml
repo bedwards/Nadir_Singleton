@@ -10,6 +10,7 @@ bars = 12
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "the final utterance of the corpus; only calibrated silences and aspirated breath spelling NADIR in Morse"
 motifs = ["m.nadir_silence"]

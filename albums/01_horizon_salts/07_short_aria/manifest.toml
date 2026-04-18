@@ -10,7 +10,7 @@ bars = 36
 form = "through-composed"
 mbrola_voice = "us1"
 
-section_repeat = 8
+section_repeat = 10
 [narrative]
 role = "the first aria; the singleton finds it can sustain"
 motifs = ["m.dawn_utterance"]

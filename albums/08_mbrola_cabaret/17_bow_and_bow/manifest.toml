@@ -1,0 +1,21 @@
+[track]
+n = 17
+slug = "17_bow_and_bow"
+title = "bow and bow"
+key = "C"
+scale = "major"
+bpm = 128
+meter = [4, 4]
+bars = 19
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 6523531916770561515
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

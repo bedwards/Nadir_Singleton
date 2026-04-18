@@ -10,6 +10,7 @@ bars = 16
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "night office; the Great Silence begins; drone descends toward stillness"
 motifs = ["m.vowel_drone"]

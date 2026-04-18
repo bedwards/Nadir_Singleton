@@ -1,0 +1,21 @@
+[track]
+n = 18
+slug = "18_tip_the_song"
+title = "tip the song"
+key = "F"
+scale = "harmonic_minor"
+bpm = 73
+meter = [4, 4]
+bars = 25
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 8479754534533964807
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

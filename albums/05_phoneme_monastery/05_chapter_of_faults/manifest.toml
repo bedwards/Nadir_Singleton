@@ -10,6 +10,7 @@ bars = 20
 form = "verse/response"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "confession; each brother names a fault on a whispered drone"
 motifs = ["m.vowel_drone"]

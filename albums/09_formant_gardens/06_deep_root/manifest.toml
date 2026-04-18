@@ -1,0 +1,21 @@
+[track]
+n = 6
+slug = "06_deep_root"
+title = "deep root"
+key = "D"
+scale = "dorian"
+bpm = 105
+meter = [4, 4]
+bars = 28
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 7586109190336232529
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

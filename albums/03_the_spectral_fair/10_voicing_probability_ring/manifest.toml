@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "a ring-the-bell attraction keyed to voicing probability; a voiced frame wins the prize"
 motifs = ["m.feature_vector_waltz"]

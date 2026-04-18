@@ -10,6 +10,7 @@ bars = 32
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "snow returns, granular this time; tens of chopped bandpass branches summed for grain texture"
 motifs = ["m.room_impulse"]

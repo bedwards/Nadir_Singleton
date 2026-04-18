@@ -1,0 +1,21 @@
+[track]
+n = 14
+slug = "14_cross_the_room"
+title = "cross the room"
+key = "C"
+scale = "dorian"
+bpm = 102
+meter = [4, 4]
+bars = 26
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 660829391920333062
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

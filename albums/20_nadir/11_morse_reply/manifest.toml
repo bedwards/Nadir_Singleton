@@ -10,6 +10,7 @@ bars = 10
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "a reply arrives; the signal is partially decoded; two letters land"
 motifs = ["m.nadir_silence"]

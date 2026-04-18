@@ -10,7 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = "us1"
 
-section_repeat = 8
+section_repeat = 10
 [narrative]
 role = "the first question; the singleton tests the shape of asking"
 motifs = ["m.dawn_utterance"]

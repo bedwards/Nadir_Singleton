@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "opener; curtain-up at the corner news kiosk, the whole town in earshot"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

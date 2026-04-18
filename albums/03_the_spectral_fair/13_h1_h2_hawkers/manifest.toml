@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "hawkers calling out the harmonic difference; breathy vs pressed voice as two competing stalls"
 motifs = ["m.feature_vector_waltz"]

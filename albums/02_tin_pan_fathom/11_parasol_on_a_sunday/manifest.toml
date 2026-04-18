@@ -10,6 +10,7 @@ bars = 48
 form = "strophic"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "walking waltz; two parasols on a Sunday stroll"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

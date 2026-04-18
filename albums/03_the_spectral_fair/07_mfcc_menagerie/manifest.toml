@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "cepstral coefficients as a menagerie of painted animals; each MFCC a different creature"
 motifs = ["m.feature_vector_waltz"]

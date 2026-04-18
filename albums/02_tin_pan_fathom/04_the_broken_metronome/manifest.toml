@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "character study; a metronome whose click wanders, making friends with the tune"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

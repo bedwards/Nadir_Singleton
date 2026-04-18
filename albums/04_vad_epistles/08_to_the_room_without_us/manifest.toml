@@ -10,6 +10,7 @@ bars = 16
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "a letter to an empty room; absence as addressee"
 motifs = ["m.letter_cadence"]

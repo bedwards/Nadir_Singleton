@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "formant bandwidth as the width of a curtain in a little booth; wide bandwidth, breathy stall"
 motifs = ["m.feature_vector_waltz"]

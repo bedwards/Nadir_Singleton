@@ -10,6 +10,7 @@ bars = 48
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "3/4 interlude; a paper fan, a porch, a patient summer"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

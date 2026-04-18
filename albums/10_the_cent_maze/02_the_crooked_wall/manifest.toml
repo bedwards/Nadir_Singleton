@@ -1,0 +1,21 @@
+[track]
+n = 2
+slug = "02_the_crooked_wall"
+title = "the crooked wall"
+key = "G"
+scale = "harmonic_minor"
+bpm = 107
+meter = [4, 4]
+bars = 31
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 7981616252088945739
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]
