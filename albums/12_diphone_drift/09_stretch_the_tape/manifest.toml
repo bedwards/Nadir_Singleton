@@ -1,0 +1,21 @@
+[track]
+n = 9
+slug = "09_stretch_the_tape"
+title = "stretch the tape"
+key = "B"
+scale = "locrian"
+bpm = 90
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 7950209845702829674
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

@@ -10,6 +10,7 @@ bars = 24
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "long watch of /a/ under darkness; the slowest drone of the album"
 motifs = ["m.vowel_drone"]

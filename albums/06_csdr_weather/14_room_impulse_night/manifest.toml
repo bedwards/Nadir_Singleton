@@ -10,6 +10,7 @@ bars = 32
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "closer; the weather has passed; we listen to the room itself; m.room_impulse deployed bare, very long IRs decaying into silence"
 motifs = ["m.room_impulse"]

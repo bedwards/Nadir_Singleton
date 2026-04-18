@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "aerialists rise and fall between low and high band energy, the alpha ratio as a tightrope"
 motifs = ["m.feature_vector_waltz"]

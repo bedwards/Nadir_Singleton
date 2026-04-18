@@ -1,0 +1,21 @@
+[track]
+n = 5
+slug = "05_near_voice"
+title = "near voice"
+key = "A"
+scale = "minor"
+bpm = 110
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2047581310989464355
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

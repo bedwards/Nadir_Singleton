@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "cycle-to-cycle F0 wobble becomes a hall of reflections; mirrors break the voice on purpose"
 motifs = ["m.feature_vector_waltz"]

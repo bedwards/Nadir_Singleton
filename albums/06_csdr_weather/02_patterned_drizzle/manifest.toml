@@ -10,6 +10,7 @@ bars = 24
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "first drops; a dirac-click bed paced in 16th-note patterns; answer to the opener's calm"
 motifs = ["m.room_impulse"]

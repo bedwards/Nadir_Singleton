@@ -1,0 +1,21 @@
+[track]
+n = 6
+slug = "06_close_to_the_mouth"
+title = "close to the mouth"
+key = "B"
+scale = "harmonic_minor"
+bpm = 82
+meter = [4, 4]
+bars = 32
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 43562825544774529
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

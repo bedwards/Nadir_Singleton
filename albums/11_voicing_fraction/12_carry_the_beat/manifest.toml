@@ -1,0 +1,21 @@
+[track]
+n = 12
+slug = "12_carry_the_beat"
+title = "carry the beat"
+key = "D"
+scale = "major"
+bpm = 121
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 5902116519596310701
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

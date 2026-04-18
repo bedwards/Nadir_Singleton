@@ -1,0 +1,21 @@
+[track]
+n = 10
+slug = "10_fall_the_rain"
+title = "fall the rain"
+key = "G"
+scale = "minor"
+bpm = 67
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 4276179920006356963
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

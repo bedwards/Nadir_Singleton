@@ -10,6 +10,7 @@ bars = 32
 form = "strophic"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "uptempo two-step at the penny arcade; laughter over a jangling game"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

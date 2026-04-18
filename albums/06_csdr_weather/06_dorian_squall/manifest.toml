@@ -10,6 +10,7 @@ bars = 32
 form = "ABA"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "a burst of wind in 6/8; ring-mod carriers tuned to dorian intervals; controlled chaos"
 motifs = ["m.room_impulse"]

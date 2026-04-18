@@ -10,6 +10,7 @@ bars = 8
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "a single letter stabilises; N is transmitted alone, three times, perfectly"
 motifs = ["m.nadir_silence"]

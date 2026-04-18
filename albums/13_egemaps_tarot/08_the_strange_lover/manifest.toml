@@ -1,0 +1,21 @@
+[track]
+n = 8
+slug = "08_the_strange_lover"
+title = "the strange lover"
+key = "B"
+scale = "mixolydian"
+bpm = 63
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 4498371631371159752
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

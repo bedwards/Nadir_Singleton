@@ -10,6 +10,7 @@ bars = 18
 form = "duet"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "gathering for reading; two voices — us1 and us3 — braid a drone"
 motifs = ["m.vowel_drone"]

@@ -10,6 +10,7 @@ bars = 12
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "one pitch remains; the hymn has only a tonic; melody becomes memory"
 motifs = ["m.drift_delta", "m.nadir_silence"]

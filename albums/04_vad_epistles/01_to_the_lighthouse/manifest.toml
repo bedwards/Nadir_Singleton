@@ -10,6 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "opening letter; a thank-you card to Lighthouse Lil"
 motifs = ["m.letter_cadence"]

@@ -1,0 +1,21 @@
+[track]
+n = 15
+slug = "15_wait_the_sky"
+title = "wait the sky"
+key = "C"
+scale = "locrian"
+bpm = 108
+meter = [4, 4]
+bars = 27
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 1327894721948709420
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "closer; the album tips its hat and puts the lamps out"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

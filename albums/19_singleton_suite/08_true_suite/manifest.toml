@@ -1,0 +1,21 @@
+[track]
+n = 8
+slug = "08_true_suite"
+title = "true suite"
+key = "C"
+scale = "harmonic_minor"
+bpm = 98
+meter = [4, 4]
+bars = 30
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 1986953883963552730
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

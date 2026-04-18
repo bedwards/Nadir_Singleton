@@ -1,0 +1,21 @@
+[track]
+n = 5
+slug = "05_long_return"
+title = "long return"
+key = "E"
+scale = "phrygian"
+bpm = 102
+meter = [4, 4]
+bars = 17
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 5913063765457611009
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

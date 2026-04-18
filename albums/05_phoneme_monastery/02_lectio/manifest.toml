@@ -10,6 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "spoken reading over the matins drone; sense emerges as syllables"
 motifs = ["m.vowel_drone"]

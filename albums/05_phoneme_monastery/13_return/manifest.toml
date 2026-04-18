@@ -10,6 +10,7 @@ bars = 20
 form = "AB"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "the brotherhood re-enters the drone after transgression; /a/ recovered, slowly"
 motifs = ["m.vowel_drone"]

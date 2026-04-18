@@ -10,6 +10,7 @@ bars = 32
 form = "verse/chorus"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "late-night return; the trolley rumbles, the town dims its windows"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

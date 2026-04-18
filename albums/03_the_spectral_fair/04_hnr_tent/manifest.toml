@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "inside a quieter tent, harmonics and noise trade places; breath becomes the decor"
 motifs = ["m.feature_vector_waltz", "m.whisper_psola"]

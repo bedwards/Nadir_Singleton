@@ -10,6 +10,7 @@ bars = 16
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "the first office; one /a/ breaks the night at 3 a.m. and holds"
 motifs = ["m.vowel_drone", "m.dawn_utterance"]

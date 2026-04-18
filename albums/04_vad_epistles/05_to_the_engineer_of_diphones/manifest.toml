@@ -10,6 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "a letter to the builder of the first diphone database"
 motifs = ["m.letter_cadence"]

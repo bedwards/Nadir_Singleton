@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "amplitude cycle-to-cycle deviation becomes the rising and falling horses of the carousel"
 motifs = ["m.feature_vector_waltz"]

@@ -1,0 +1,21 @@
+[track]
+n = 8
+slug = "08_high_gate"
+title = "high gate"
+key = "A"
+scale = "dorian"
+bpm = 137
+meter = [4, 4]
+bars = 29
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 5992509520957850856
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

@@ -1,0 +1,21 @@
+[track]
+n = 15
+slug = "15_open_the_name"
+title = "open the name"
+key = "F"
+scale = "minor"
+bpm = 96
+meter = [4, 4]
+bars = 18
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2353719145830629197
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "a carnival high-striker named for the Hammarberg index; a hammer of brightness ratio"
 motifs = ["m.feature_vector_waltz"]

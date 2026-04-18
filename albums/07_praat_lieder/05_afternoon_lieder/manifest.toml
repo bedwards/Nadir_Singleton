@@ -1,0 +1,21 @@
+[track]
+n = 5
+slug = "05_afternoon_lieder"
+title = "afternoon lieder"
+key = "D"
+scale = "harmonic_minor"
+bpm = 97
+meter = [4, 4]
+bars = 30
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 2204969936908240287
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

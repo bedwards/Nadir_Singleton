@@ -1,0 +1,21 @@
+[track]
+n = 16
+slug = "16_the_last_song"
+title = "the last song"
+key = "A"
+scale = "harmonic_minor"
+bpm = 98
+meter = [4, 4]
+bars = 17
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 394037823041461380
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

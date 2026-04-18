@@ -10,6 +10,7 @@ bars = 18
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "closing; a single held /a/ resolves to silence; the album's seed for album 19"
 motifs = ["m.vowel_drone"]

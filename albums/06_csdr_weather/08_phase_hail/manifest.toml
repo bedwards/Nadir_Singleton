@@ -10,6 +10,7 @@ bars = 20
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "side B opens with violence; hard-edged dirac hits with phase-scattered IR tails; hail on metal"
 motifs = ["m.room_impulse"]

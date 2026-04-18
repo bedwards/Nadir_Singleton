@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "a parade in which every float is a percentile of F0; 20th, 50th, 80th march in order"
 motifs = ["m.feature_vector_waltz"]

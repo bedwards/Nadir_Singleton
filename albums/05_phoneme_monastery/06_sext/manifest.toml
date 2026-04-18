@@ -10,6 +10,7 @@ bars = 16
 form = "ABCA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "noon office; three vowels braid at the brightest hour"
 motifs = ["m.vowel_drone"]

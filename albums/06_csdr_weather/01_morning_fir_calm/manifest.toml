@@ -10,6 +10,7 @@ bars = 32
 form = "through-composed"
 mbrola_voice = ""
 
+section_repeat = 10
 [narrative]
 role = "opener; dawn air before the weather system arrives; stillness as empty FIR taps warming up"
 motifs = ["m.room_impulse"]

@@ -1,0 +1,21 @@
+[track]
+n = 11
+slug = "11_cross_the_road"
+title = "cross the road"
+key = "D"
+scale = "dorian"
+bpm = 89
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 4597409776065676477
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

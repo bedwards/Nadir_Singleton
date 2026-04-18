@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "the barker calls the crowd; Zwicker sone becomes the melody"
 motifs = ["m.feature_vector_waltz"]

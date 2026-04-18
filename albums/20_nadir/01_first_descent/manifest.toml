@@ -10,6 +10,7 @@ bars = 16
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "the descent begins; pitch stability falters; we still carry full syllables"
 motifs = ["m.drift_delta", "m.nadir_silence"]

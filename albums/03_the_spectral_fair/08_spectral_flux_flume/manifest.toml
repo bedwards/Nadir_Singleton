@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "frame-to-frame spectral change is the rushing water of a log-flume ride; attacks as splashes"
 motifs = ["m.feature_vector_waltz"]

@@ -10,6 +10,7 @@ bars = 24
 form = "through-composed"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "a reply letter; the broken metronome writes back to us"
 motifs = ["m.letter_cadence"]

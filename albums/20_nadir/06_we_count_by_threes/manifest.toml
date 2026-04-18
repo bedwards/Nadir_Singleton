@@ -10,6 +10,7 @@ bars = 12
 form = "through-composed"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "meter thins to three; only every third beat carries a syllable"
 motifs = ["m.drift_delta", "m.nadir_silence"]

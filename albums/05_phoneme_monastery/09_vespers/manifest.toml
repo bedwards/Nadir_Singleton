@@ -10,6 +10,7 @@ bars = 18
 form = "verse/refrain"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "evening office; candle-lit; a subtle quote from earlier album colors the drone"
 motifs = ["m.vowel_drone"]

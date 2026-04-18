@@ -10,6 +10,7 @@ bars = 32
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "ballad for the instrument itself; an out-of-tune upright that knows every song"
 motifs = ["m.tin_pan_turnaround", "m.hook"]

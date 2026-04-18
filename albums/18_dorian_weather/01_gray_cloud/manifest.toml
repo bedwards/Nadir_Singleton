@@ -1,0 +1,21 @@
+[track]
+n = 1
+slug = "01_gray_cloud"
+title = "gray cloud"
+key = "B"
+scale = "major"
+bpm = 92
+meter = [4, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 3448924879590003869
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

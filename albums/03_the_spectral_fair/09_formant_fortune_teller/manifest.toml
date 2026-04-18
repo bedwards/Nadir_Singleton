@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us3"
 
+section_repeat = 10
 [narrative]
 role = "F1, F2, F3 as three cards laid by a velvet-robed fortune teller; formant frequencies read the future"
 motifs = ["m.feature_vector_waltz"]

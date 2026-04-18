@@ -10,6 +10,7 @@ bars = 18
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "dawn praise; /o/ is permitted for the first office with its own drone"
 motifs = ["m.vowel_drone", "m.dawn_utterance"]

@@ -1,0 +1,21 @@
+[track]
+n = 3
+slug = "03_quick_bell"
+title = "quick bell"
+key = "G"
+scale = "dorian"
+bpm = 60
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us1"
+section_repeat = 10
+seed = 7454763456562203393
+
+[targets]
+tessitura_hz = [140, 440]
+pitch_error_ceiling_cents = 20.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_presets = ["tonal_drone_triad", "shaped_noise_air"]

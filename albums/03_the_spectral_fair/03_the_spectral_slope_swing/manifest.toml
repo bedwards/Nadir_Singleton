@@ -10,6 +10,7 @@ bars = 24
 form = "AABA"
 mbrola_voice = "us1"
 
+section_repeat = 10
 [narrative]
 role = "the title dance; the tilt of the spectrum is the tilt of the waltz"
 motifs = ["m.feature_vector_waltz"]
