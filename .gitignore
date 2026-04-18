@@ -40,3 +40,4 @@ render.scratch/
 logs/
 
 .claude/
+/compilations/
