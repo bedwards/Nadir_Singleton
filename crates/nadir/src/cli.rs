@@ -980,6 +980,11 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 meter: [u32; 2],
                 #[serde(default)]
                 title: Option<String>,
+                /// Repeat the composed phrase stream N times end-to-end.
+                /// Stretches short lyrics toward the 3-min target from the
+                /// 100-video release plan.
+                #[serde(default = "default_repeat")]
+                section_repeat: u32,
             }
             #[derive(Deserialize, Default, Clone)]
             struct SecondaryVoice {
@@ -1046,6 +1051,9 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
             }
             fn default_meter() -> [u32; 2] {
                 [4, 4]
+            }
+            fn default_repeat() -> u32 {
+                1
             }
             fn default_voice() -> String {
                 "us1".into()
@@ -1253,7 +1261,7 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 .as_ref()
                 .and_then(|t| t.tessitura_hz)
                 .map(|[lo, hi]| (lo, hi));
-            let notes = plan_melody_phrased_in_range(
+            let base_notes = plan_melody_phrased_in_range(
                 &sc,
                 &syllables,
                 &phrase_lens,
@@ -1263,6 +1271,27 @@ fn dispatch_song(c: SongCmd) -> Result<()> {
                 &stresses,
                 tessitura,
             );
+            // Section repeat — cycle the composed phrases N times to stretch
+            // short lyrics toward the 3-min target. Notes, phonemes, stresses,
+            // syllables, and phrase_lens all get repeated N times in lockstep
+            // so downstream steps (render, syllable dynamics, oohs) stay aligned.
+            let repeat = m.track.section_repeat.max(1);
+            let base_phonemes = phonemes.clone();
+            let base_stresses = stresses.clone();
+            let base_syllables = syllables.clone();
+            let base_phrase_lens = phrase_lens.clone();
+            let mut notes = base_notes.clone();
+            let mut phonemes = base_phonemes.clone();
+            let mut stresses = base_stresses.clone();
+            let mut syllables = base_syllables.clone();
+            let mut phrase_lens = base_phrase_lens.clone();
+            for _ in 1..repeat {
+                notes.extend_from_slice(&base_notes);
+                phonemes.extend(base_phonemes.iter().cloned());
+                stresses.extend(base_stresses.iter().copied());
+                syllables.extend(base_syllables.iter().cloned());
+                phrase_lens.extend(base_phrase_lens.iter().copied());
+            }
             let stream = render_vox_pho_phrased(&notes, &phonemes, &phrase_lens, 30, 400);
 
             let vox_cfg = MbrolaConfig {
