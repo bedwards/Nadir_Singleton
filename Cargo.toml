@@ -32,6 +32,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tempfile = "3"
 hound = "3"
 fs-err = "2"
+fd-lock = "4"
 camino = { version = "1", features = ["serde1"] }
 
 nadir-core = { path = "crates/nadir-core", version = "0.2.0" }

@@ -96,6 +96,19 @@ pub enum Cmd {
         #[arg(long, default_value = "compilations")]
         out_dir: PathBuf,
     },
+    /// Show render progress across all albums or a single album.
+    /// Scans disk state: tracks with/without lyrics, stems, mixdowns.
+    /// Optionally --watch to poll every N seconds.
+    Progress {
+        /// Album slug. Omit → all albums.
+        album: Option<String>,
+        /// Poll interval in seconds. Omit → one-shot.
+        #[arg(long)]
+        watch: Option<u64>,
+        /// Only show albums with at least one rendered track.
+        #[arg(long)]
+        active_only: bool,
+    },
 }
 
 // ─────────── album ───────────
@@ -445,6 +458,11 @@ pub fn dispatch(cli: Cli) -> Result<()> {
             xfade_ms,
             out_dir,
         } => dispatch_compile(&albums, target_minutes, xfade_ms, &out_dir),
+        Progress {
+            album,
+            watch,
+            active_only,
+        } => dispatch_progress(album.as_deref(), watch, active_only),
     }
 }
 
@@ -940,6 +958,18 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             keep_going,
         } => {
             let album_dir = std::path::Path::new("albums").join(&slug);
+
+            // Exclusive flock: only one album render at a time
+            let lock_path = album_dir.join(".render.lock");
+            let lock_file = std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .open(&lock_path)?;
+            let mut flock = fd_lock::RwLock::new(lock_file);
+            let _lock = flock
+                .try_write()
+                .map_err(|e| anyhow::anyhow!("another process is rendering album '{slug}': {e}"))?;
+
             let mut tracks: Vec<(u8, std::path::PathBuf)> = Vec::new();
             for entry in fs_err::read_dir(&album_dir)? {
                 let entry = entry?;
@@ -966,7 +996,18 @@ fn dispatch_album(c: AlbumCmd) -> Result<()> {
             tracks.sort_by_key(|(n, _)| *n);
             let total = tracks.len();
             let mut rendered = 0usize;
-            for (n, _path) in &tracks {
+            for (n, path) in &tracks {
+                // Skip if output WAV already exists
+                let dir_name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("render");
+                let out_wav = path.join(format!("{dir_name}.wav"));
+                if out_wav.exists() {
+                    println!("▸ [{n:02}/{total}] track {n} — already rendered, skipping");
+                    rendered += 1;
+                    continue;
+                }
                 println!("▸ [{n:02}/{total}] rendering track {n}");
                 let exe = std::env::current_exe()?;
                 let status = std::process::Command::new(&exe)
@@ -2634,6 +2675,279 @@ fn dispatch_doctor() -> Result<()> {
         );
     }
     Ok(())
+}
+
+fn dispatch_progress(album: Option<&str>, watch: Option<u64>, active_only: bool) -> Result<()> {
+    use std::thread;
+    use std::time::Instant;
+
+    let mut prev = String::new();
+    loop {
+        let report = if let Some(slug) = album {
+            scan_album_progress(slug)?
+        } else {
+            scan_all_albums_progress(active_only)?
+        };
+        if report != prev {
+            print!("{report}");
+            prev = report;
+        }
+        match watch {
+            Some(secs) if secs > 0 => thread::sleep(std::time::Duration::from_secs(secs)),
+            _ => break,
+        }
+    }
+    Ok(())
+}
+
+fn scan_all_albums_progress(active_only: bool) -> Result<String> {
+    use std::path::Path;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let base = Path::new("albums");
+    if !base.exists() {
+        return Ok("ERROR: albums/ dir not found\n".into());
+    }
+
+    let mut lines = Vec::new();
+    lines.push(format!("╭────────────────────────────────────────────────────────────────────────────────╮\n"));
+    lines.push(format!("│  NADIR RENDER PROGRESS  {:<44}│\n", ""));
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let secs = now % 60;
+    let mins = (now / 60) % 60;
+    let hrs = (now / 3600) % 24;
+    let days = now / 86400;
+    // days since epoch + base date 1970-01-01
+    let year = 1970 + days / 365; // rough, good enough for display
+    lines.push(format!("│  {year}-{days:05} {hrs:02}:{mins:02}:{secs:02} UTC{:<41}│\n", ""));
+
+    let mut albums: Vec<_> = fs_err::read_dir(base)?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            name.starts_with(|c: char| c.is_ascii_digit()).then_some(name)
+        })
+        .collect();
+    albums.sort();
+
+    let mut total_tracks = 0u32;
+    let mut total_rendered = 0u32;
+    let mut total_mixdowns = 0u32;
+    let mut total_bytes = 0u64;
+
+    for slug in &albums {
+        let path = base.join(slug);
+        let mut tracks = 0u32;
+        let mut rendered = 0u32;
+        let mut mixdowns = 0u32;
+        let mut album_bytes = 0u64;
+
+        for td in fs_err::read_dir(&path).ok().into_iter().flatten() {
+            let td = td.ok().filter(|e| e.path().is_dir());
+            let Some(td) = td else { continue };
+            let name = td.file_name().to_string_lossy().into_owned();
+            if !name.starts_with(|c: char| c.is_ascii_digit()) { continue; }
+            tracks += 1;
+            let tname = &name;
+
+            // Check mixdown
+            let has_mix = path.join(format!("{name}/{tname}.wav")).exists()
+                || path.join(format!("{name}/render.wav")).exists();
+            if has_mix {
+                mixdowns += 1;
+                rendered += 1;
+            }
+
+            // Check vocal stem
+            if path.join(format!("{name}/stems/vocal.wav")).exists() && !has_mix {
+                rendered += 1;
+            }
+
+            // Sum WAV bytes for this track
+            album_bytes += glob_wav_files(&path.join(&name));
+        }
+
+        if active_only && mixdowns == 0 { continue; }
+
+        let pct = if tracks > 0 { mixdowns * 100 / tracks } else { 0 };
+        let bar = render_bar(pct, 20);
+        lines.push(format!(
+            "│  {:<25} {:>3}/{:<3} [{:>20}] {:>3}% {:>8.1} MB│\n",
+            slug, mixdowns, tracks, bar, pct, album_bytes as f64 / 1_048_576.0
+        ));
+
+        total_tracks += tracks;
+        total_rendered += rendered;
+        total_mixdowns += mixdowns;
+        total_bytes += album_bytes;
+    }
+
+    lines.push(format!("├────────────────────────────────────────────────────────────────────────────────┤\n"));
+    lines.push(format!(
+        "│  {:<25} {:>3}/{:<3}                   {:>8.1} MB│\n",
+        "TOTAL", total_mixdowns, total_tracks, total_bytes as f64 / 1_048_576.0
+    ));
+
+    // Running processes
+    if let Ok(out) = std::process::Command::new("ps")
+        .args(["-eo", "pid,pcpu,rss,comm,args"])
+        .output()
+    {
+        let ps = String::from_utf8_lossy(&out.stdout);
+        let running: Vec<_> = ps.lines()
+            .filter(|l| l.contains("nadir") && l.contains("render") && !l.contains("grep"))
+            .collect();
+        if !running.is_empty() {
+            lines.push(format!("│  RUNNING: {:<55}│\n", ""));
+            for line in &running {
+                let trimmed = line.trim();
+                let short = if trimmed.len() > 60 { &trimmed[..60] } else { trimmed };
+                lines.push(format!("│    {:<70}│\n", short));
+            }
+        }
+    }
+
+    lines.push(format!("╰────────────────────────────────────────────────────────────────────────────────╯\n"));
+    Ok(lines.join(""))
+}
+
+fn scan_album_progress(slug: &str) -> Result<String> {
+    use std::path::Path;
+    let base = Path::new("albums").join(slug);
+    if !base.exists() {
+        return Ok(format!("ERROR: albums/{slug}/ not found\n"));
+    }
+
+    let mut lines = Vec::new();
+    lines.push(format!("╭────────────────────────────────────────────────────────────────────────────────╮\n"));
+    lines.push(format!("│  ALBUM: {slug:<64}│\n"));
+
+    let mut total_tracks = 0u32;
+    let mut rendered = 0u32;
+    let mut total_bytes = 0u64;
+    let mut total_dur_s = 0.0f64;
+
+    for td in fs_err::read_dir(&base)? {
+        let td = td.ok().filter(|e| e.path().is_dir());
+        let Some(td) = td else { continue };
+        let name = td.file_name().to_string_lossy().into_owned();
+        if !name.starts_with(|c: char| c.is_ascii_digit()) { continue; }
+        total_tracks += 1;
+        let tname = &name;
+        let tdir = base.join(&name);
+
+        // Determine stage
+        let stage = if tdir.join(format!("{tname}.wav")).exists()
+            || tdir.join("render.wav").exists()
+        {
+            rendered += 1;
+            let wav = tdir.join(format!("{tname}.wav"));
+            if wav.exists() {
+                let sz = fs_err::metadata(&wav).map(|m| m.len()).unwrap_or(0);
+                total_bytes += sz;
+                let dur = sz as f64 / (2.0 * 48000.0 * 2.0);
+                total_dur_s += dur;
+            }
+            "MIX"
+        } else if tdir.join("stems/vocal.wav").exists() {
+            let sz = fs_err::metadata(tdir.join("stems/vocal.wav")).map(|m| m.len()).unwrap_or(0);
+            total_bytes += sz;
+            "VOCAL"
+        } else if tdir.join("work/raw_vox.wav").exists() {
+            total_bytes += fs_err::metadata(tdir.join("work/raw_vox.wav")).map(|m| m.len()).unwrap_or(0);
+            "RAW"
+        } else {
+            "IDLE"
+        };
+
+        // Stem details
+        let stems = [
+            ("vocal", tdir.join("stems/vocal.wav")),
+            ("bed", tdir.join("stems/bed.wav")),
+            ("pulse", tdir.join("stems/pulses.wav")),
+            ("kick", tdir.join("stems/kick.wav")),
+            ("hat", tdir.join("stems/hat.wav")),
+            ("bass", tdir.join("stems/bass_arp.wav")),
+            ("oohs", tdir.join("stems/oohs.wav")),
+        ];
+        let stem_flags: String = stems
+            .iter()
+            .map(|(name, p): &(&str, std::path::PathBuf)| {
+                if p.exists() {
+                    let sz = fs_err::metadata(p).map(|m| m.len()).unwrap_or(0);
+                    total_bytes += sz;
+                    format!("{}", &name[0..1].to_uppercase())
+                } else {
+                    ".".into()
+                }
+            })
+            .collect();
+        lines.push(format!(
+            "│  {:>2}  {:<30} {:>5}  {:>8}  {:>1.1}MB {:>7}│\n",
+            name.split('_').next().unwrap_or("??"),
+            tname,
+            stage,
+            stem_flags,
+            total_bytes as f64 / 1_048_576.0,
+            "",
+        ));
+    }
+
+    let pct = if total_tracks > 0 { rendered * 100 / total_tracks } else { 0 };
+    let bar = render_bar(pct, 20);
+    lines.push(format!("├────────────────────────────────────────────────────────────────────────────────┤\n"));
+    lines.push(format!(
+        "│  {:>3}/{:<3} [{:>20}] {:>3}%  {:>6.1} min audio  {:>7.1} MB│\n",
+        rendered, total_tracks, bar, pct, total_dur_s / 60.0, total_bytes as f64 / 1_048_576.0
+    ));
+
+    // Running processes for this album
+    if let Ok(out) = std::process::Command::new("ps")
+        .args(["-eo", "pid,pcpu,rss,etimes,args"])
+        .output()
+    {
+        let ps = String::from_utf8_lossy(&out.stdout);
+        let running: Vec<_> = ps.lines()
+            .filter(|l| l.contains(slug) && l.contains("render") && !l.contains("grep"))
+            .collect();
+        if !running.is_empty() {
+            lines.push(format!("│  RUNNING: {:<55}│\n", ""));
+            for line in &running {
+                let trimmed = line.trim();
+                let short = if trimmed.len() > 60 { &trimmed[..60] } else { trimmed };
+                lines.push(format!("│    {:<70}│\n", short));
+            }
+        }
+    }
+
+    lines.push(format!("╰────────────────────────────────────────────────────────────────────────────────╯\n"));
+    lines.push(format!("Legend: V=vocal B=bed P=pulse K=kick H=hat B=bass O=oohs  Stage: MIX=done VOCAL=stems RAW=mbrola IDLE=empty\n"));
+    Ok(lines.join(""))
+}
+
+fn glob_wav_files(dir: &std::path::Path) -> u64 {
+    let mut total = 0u64;
+    if let Ok(entries) = fs_err::read_dir(dir) {
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                total += glob_wav_files(&p);
+            } else if p.extension().map(|e| e == "wav").unwrap_or(false) {
+                total += fs_err::metadata(&p).map(|m| m.len()).unwrap_or(0);
+            }
+        }
+    }
+    total
+}
+
+fn render_bar(pct: u32, width: usize) -> String {
+    let filled = (pct as usize * width / 100).min(width);
+    let empty = width - filled;
+    format!("{}{}", "█".repeat(filled), "░".repeat(empty))
 }
 
 fn slugify(s: &str) -> String {
