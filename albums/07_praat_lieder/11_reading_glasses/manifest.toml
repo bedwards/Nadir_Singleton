@@ -1,0 +1,37 @@
+[track]
+n = 11
+slug = "11_reading_glasses"
+title = "Reading Glasses"
+key = "F"
+scale = "major"
+bpm = 66
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "a pair of reading glasses folded on a page; the second and last major-key Lied"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["15_the_folded_map"]
+
+[targets]
+tessitura_hz = [175, 380]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -17.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 75
+pitch_ceiling_hz = 1100
+very_accurate = true
+formant_shift_ratio = 1.08
+target_median_hz = 235
+range_factor = 0.80

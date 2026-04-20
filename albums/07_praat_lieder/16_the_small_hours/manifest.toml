@@ -1,0 +1,38 @@
+[track]
+n = 16
+slug = "16_the_small_hours"
+title = "The Small Hours"
+key = "F#"
+scale = "minor"
+bpm = 48
+meter = [3, 4]
+bars = 24
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "closing Lied; the hour before first light; the cycle almost opens again"
+motifs = ["m.whisper_psola", "m.letter_cadence"]
+carries = ["art-song-whisper"]
+seeds_for = []
+
+[targets]
+tessitura_hz = [150, 340]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -19.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 65
+pitch_ceiling_hz = 1000
+very_accurate = true
+formant_shift_ratio = 1.00
+target_median_hz = 210
+range_factor = 0.72
+final_silence_ms = 3000

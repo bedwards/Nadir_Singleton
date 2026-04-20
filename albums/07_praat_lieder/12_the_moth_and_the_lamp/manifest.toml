@@ -1,0 +1,37 @@
+[track]
+n = 12
+slug = "12_the_moth_and_the_lamp"
+title = "The Moth and the Lamp"
+key = "E"
+scale = "minor"
+bpm = 62
+meter = [4, 4]
+bars = 20
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the moth circling the reading-lamp; a small ritual that is also a small tragedy"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["14_an_empty_glass", "16_the_small_hours"]
+
+[targets]
+tessitura_hz = [160, 360]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -18.0
+
+[dsp]
+bed_preset = "shaped_noise_bed"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "shs"
+pitch_floor_hz = 60
+pitch_ceiling_hz = 900
+very_accurate = true
+formant_shift_ratio = 0.95
+target_median_hz = 200
+range_factor = 0.70

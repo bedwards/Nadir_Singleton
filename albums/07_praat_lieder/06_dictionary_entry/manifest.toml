@@ -1,0 +1,37 @@
+[track]
+n = 6
+slug = "06_dictionary_entry"
+title = "Dictionary Entry"
+key = "C"
+scale = "major"
+bpm = 64
+meter = [4, 4]
+bars = 16
+form = "through-composed"
+mbrola_voice = "us1"
+
+[narrative]
+role = "the one small smile of the album: we read the definition of a word we already know"
+motifs = ["m.whisper_psola"]
+carries = ["art-song-whisper"]
+seeds_for = ["11_reading_glasses"]
+
+[targets]
+tessitura_hz = [175, 380]
+pitch_error_ceiling_cents = 2.0
+vox_loudness_lufs = -17.0
+
+[dsp]
+bed_preset = "band_limit"
+texture_preset = "silence"
+sample_source = "none"
+
+[praat]
+script = "psola_retarget.praat"
+pitch_method = "ac"
+pitch_floor_hz = 75
+pitch_ceiling_hz = 1100
+very_accurate = true
+formant_shift_ratio = 1.06
+target_median_hz = 230
+range_factor = 0.82
